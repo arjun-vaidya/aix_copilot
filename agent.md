@@ -20,3 +20,8 @@ All AI agents assisting in the development of this repository must strictly adhe
    - Every feature must support the central mission of AI4Numerics: **Making learning with AI easier while fundamentally forcing students to reason through problems.**
    - Do not build features that automatically "do the work" for the student without incorporating guardrails (like the Gatekeeper constraints, Manual Audits, and Verification reasoning loops).
    - Prioritize UI/UX workflows that expose the physical and logic dependencies of the code being written.
+
+5. **Mobile Responsiveness is Mandatory**
+   - All UI designs must be built to function and look clean on mobile devices.
+   - Fluidly wrap Flex and Grid layouts on smaller screens using Tailwind breakpoints (e.g. \`flex-col lg:flex-row\`).
+   - Use responsive padding, margins, and font sizes to ensure elements are not truncated or squished off-screen.

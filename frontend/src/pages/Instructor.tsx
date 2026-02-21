@@ -1,1 +1,3 @@
-export default function Instructor() { return <div>Instructor Dash</div> }
+export default function Instructor() {
+  return <div>Instructor Dash</div>;
+}

@@ -1,1 +1,3 @@
-export default function Workspace() { return <div>Workspace</div> }
+export default function Workspace() {
+  return <div>Workspace</div>;
+}
