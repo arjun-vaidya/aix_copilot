@@ -16,7 +16,9 @@ export default function CoPilotChat({
     constraints,
     code,
     logs,
-    audits
+    audits,
+    messages,
+    setMessages
 }: {
     state: WorkspaceState;
     problem: ProblemSet;
@@ -25,12 +27,11 @@ export default function CoPilotChat({
     code: string;
     logs: LogEntry[];
     audits: AuditRecord[];
+    messages: ChatMessage[];
+    setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }) {
     const isLocked = state === "GATEKEEPER" || state === "LOCKED";
 
-    const [messages, setMessages] = useState<ChatMessage[]>([
-        { role: "assistant", content: "Hello! I'm here to help you reason through your numerical simulation. How can we start forming the solution according to your constraints?" }
-    ]);
     const [inputValue, setInputValue] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);

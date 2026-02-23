@@ -7,6 +7,7 @@ import Editor from "../components/workspace/Editor";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
+import { type ChatMessage } from "../lib/aiService";
 import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
@@ -31,6 +32,10 @@ export default function Workspace() {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>("GATEKEEPER");
   const [evaluationResult, setEvaluationResult] = useState<"pass" | "fail" | null>(null);
   const [audits, setAudits] = useState<AuditRecord[]>([]);
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { role: "assistant", content: "Hello! I'm here to help you reason through your numerical simulation. How can we start forming the solution according to your constraints?" }
+  ]);
 
   // Use a ref for executionMode so the Pyodide WebWorker's stale closure can always access the freshest value
   const executionModeRef = useRef<"simulation" | "test" | null>(null);
@@ -232,6 +237,8 @@ export default function Workspace() {
                     code={editorCode}
                     logs={logs}
                     audits={audits}
+                    messages={chatMessages}
+                    setMessages={setChatMessages}
                   />
                 )}
               </Panel>
@@ -286,6 +293,8 @@ export default function Workspace() {
                   code={editorCode}
                   logs={logs}
                   audits={audits}
+                  messages={chatMessages}
+                  setMessages={setChatMessages}
                 />
               )
             )}
