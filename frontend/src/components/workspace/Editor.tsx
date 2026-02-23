@@ -4,14 +4,17 @@ import type { ProblemSet } from "../../lib/problems_mock";
 import type { WorkspaceState } from "../../pages/Workspace";
 
 export default function Editor({
+    problem,
     state,
     onRun,
+    onRunTests,
     code,
     setCode
 }: {
     problem: ProblemSet;
     state: WorkspaceState;
     onRun: () => void;
+    onRunTests?: () => void;
     onExecutionFinished: (pass: boolean) => void;
     code: string;
     setCode: (val: string) => void;
@@ -34,14 +37,26 @@ export default function Editor({
                     </div>
                 </div>
 
-                <button
-                    onClick={handleRun}
-                    disabled={isLocked || state === "EXECUTION"}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 text-white rounded-md text-xs font-bold transition-colors shadow-sm"
-                >
-                    <Play className="w-3.5 h-3.5" />
-                    {state === "EXECUTION" ? "Running..." : "Run Simulation"}
-                </button>
+                <div className="flex items-center gap-2">
+                    {problem.unitTestPath && (
+                        <button
+                            onClick={() => !isLocked && state !== "EXECUTION" && onRunTests?.()}
+                            disabled={isLocked || state === "EXECUTION"}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-md text-xs font-bold transition-colors shadow-sm"
+                        >
+                            <Code2 className="w-3.5 h-3.5" />
+                            Run Tests
+                        </button>
+                    )}
+                    <button
+                        onClick={handleRun}
+                        disabled={isLocked || state === "EXECUTION"}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 text-white rounded-md text-xs font-bold transition-colors shadow-sm"
+                    >
+                        <Play className="w-3.5 h-3.5" />
+                        {state === "EXECUTION" ? "Running..." : "Run Simulation"}
+                    </button>
+                </div>
             </div>
 
             {/* Monaco Editor Container */}

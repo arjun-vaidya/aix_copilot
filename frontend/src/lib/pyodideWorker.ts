@@ -22,7 +22,7 @@ async function loadEngine() {
 }
 
 self.onmessage = async (event: MessageEvent) => {
-    const { code, id } = event.data;
+    const { code, id, testPath } = event.data;
 
     if (!pyodide) {
         self.postMessage({ type: "system", text: "Initializing Python Engine (Pyodide v0.25)..." });
@@ -31,11 +31,24 @@ self.onmessage = async (event: MessageEvent) => {
     }
 
     try {
+        let executionCode = code;
+
+        // If a test validation path is provided, fetch it and append it to the student's namespace execution block
+        if (testPath) {
+            self.postMessage({ type: "system", text: `Fetching validation suite from ${testPath}...` });
+            const response = await fetch(testPath);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch unit tests (${response.status})`);
+            }
+            const testCode = await response.text();
+            executionCode = code + "\n\n" + testCode;
+        }
+
         // Automatically fetch numeric packages like numpy, scipy, pandas if imported
-        await pyodide.loadPackagesFromImports(code);
+        await pyodide.loadPackagesFromImports(executionCode);
 
         // Execute the python string asynchronously
-        const result = await pyodide.runPythonAsync(code);
+        const result = await pyodide.runPythonAsync(executionCode);
 
         self.postMessage({ type: "success", id, result: result?.toString() });
     } catch (error: any) {

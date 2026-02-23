@@ -11,6 +11,7 @@ export type ProblemSet = {
         fields: { name: string; type: string; desc: string }[];
     }[];
     initialCode: string;
+    unitTestPath?: string;
 };
 
 export const MOCK_PROBLEMS: Record<string, ProblemSet> = {
@@ -52,6 +53,7 @@ y = df['Price'].values
 # TODO: Implement Linear Regression here...
 
 `,
+        unitTestPath: "/unit_tests/problem_1.py",
     },
     "2": {
         id: "2",
@@ -75,5 +77,6 @@ c = 0.5  # damping coefficient
 
 # TODO: Define the ODE system and simulate
 `,
+        unitTestPath: "/unit_tests/problem_2.py",
     },
 };

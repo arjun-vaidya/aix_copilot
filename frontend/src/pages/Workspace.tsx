@@ -79,6 +79,14 @@ export default function Workspace() {
     worker.postMessage({ code: editorCode, id: Date.now() });
   }
 
+  const handleRunTests = () => {
+    if (!problem?.unitTestPath) return;
+    setWorkspaceState("EXECUTION");
+    setLogs(l => [...l, { type: "system", text: `\n> Initiating Validation Suite [${problem.unitTestPath}]...` }]);
+    const worker = getWorker();
+    worker.postMessage({ code: editorCode, id: Date.now(), testPath: problem.unitTestPath });
+  }
+
   if (!problem) {
     return <div className="p-8 text-center text-slate-500">Problem not found.</div>;
   }
@@ -154,6 +162,7 @@ export default function Workspace() {
                   problem={problem}
                   state={workspaceState}
                   onRun={handleRunSimulation}
+                  onRunTests={handleRunTests}
                   onExecutionFinished={(pass) => setWorkspaceState(pass ? "EVALUATION" : "LOCKED")}
                   code={editorCode}
                   setCode={setEditorCode}
