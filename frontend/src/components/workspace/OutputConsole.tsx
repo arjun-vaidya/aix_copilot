@@ -1,8 +1,14 @@
 import { Terminal } from "lucide-react";
+import { useRef, useEffect } from "react";
 
 export type LogEntry = { type: "stdout" | "stderr" | "system" | "error" | "success"; text: string };
 
 export default function OutputConsole({ logs }: { logs: LogEntry[] }) {
+    const bottomRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [logs]);
     return (
         <div className="flex-1 flex flex-col h-full bg-[#0d1117] text-slate-300 font-mono text-sm relative">
             {/* Console Header */}
@@ -18,6 +24,7 @@ export default function OutputConsole({ logs }: { logs: LogEntry[] }) {
                         {log.text}
                     </p>
                 ))}
+                <div ref={bottomRef} />
             </div>
         </div>
     );
