@@ -7,7 +7,7 @@ import Editor from "../components/workspace/Editor";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import { useRef, useEffect } from "react";
-import { ListTodo, Code2, Bot, Lock } from "lucide-react";
+import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
 
@@ -32,6 +32,9 @@ export default function Workspace() {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>("GATEKEEPER");
   const [logs, setLogs] = useState<LogEntry[]>([{ type: "system", text: "Pyodide Kernel Waiting..." }]);
   const workerRef = useRef<Worker | null>(null);
+
+  // Layout states
+  const [isCopilotVisible, setIsCopilotVisible] = useState(true);
 
   // Mobile responsiveness
   const isMobile = useIsMobile();
@@ -98,10 +101,21 @@ export default function Workspace() {
           </div>
         </div>
         <div className="absolute top-3 right-4 md:static md:mt-0 flex items-center shrink-0">
-          <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-slate-50 rounded-lg border border-slate-200 shadow-sm md:shadow-none">
+          <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-slate-50 rounded-lg border border-slate-200 shadow-sm md:shadow-none mr-2 md:mr-4">
             <span className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${workspaceState === "EXECUTION" ? "bg-amber-500 animate-pulse" : workspaceState === "UNLOCKED" ? "bg-green-500" : "bg-blue-500"}`}></span>
             <span className="text-[9px] md:text-[11px] font-black text-slate-600 uppercase tracking-widest">{workspaceState}</span>
           </div>
+
+          {/* Co-Pilot Toggle Button (Desktop Only) */}
+          {!isMobile && (
+            <button
+              onClick={() => setIsCopilotVisible(!isCopilotVisible)}
+              className="p-1.5 md:p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-lg transition-colors flex items-center justify-center bg-white shadow-sm"
+              title={isCopilotVisible ? "Hide Co-Pilot" : "Show Co-Pilot"}
+            >
+              {isCopilotVisible ? <PanelRightClose className="w-4 h-4 md:w-5 md:h-5" /> : <PanelRightOpen className="w-4 h-4 md:w-5 md:h-5" />}
+            </button>
+          )}
         </div>
       </header>
 
@@ -134,14 +148,19 @@ export default function Workspace() {
             </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className="w-1.5 bg-slate-100 hover:bg-blue-200 transition-colors cursor-col-resize flex flex-col justify-center items-center z-10 border-l border-slate-200">
-            <div className="w-0.5 h-8 bg-slate-300 rounded-full"></div>
-          </PanelResizeHandle>
+          {/* Conditional Co-Pilot Rendering */}
+          {isCopilotVisible && (
+            <>
+              <PanelResizeHandle className="w-1.5 bg-slate-100 hover:bg-blue-200 transition-colors cursor-col-resize flex flex-col justify-center items-center z-10 border-l border-slate-200">
+                <div className="w-0.5 h-8 bg-slate-300 rounded-full"></div>
+              </PanelResizeHandle>
 
-          {/* RIGHT PANEL: Co-Pilot */}
-          <Panel defaultSize={25} minSize={20} className="bg-white flex flex-col z-0">
-            <CoPilotChat state={workspaceState} />
-          </Panel>
+              {/* RIGHT PANEL: Co-Pilot */}
+              <Panel defaultSize={25} minSize={20} className="bg-white flex flex-col z-0">
+                <CoPilotChat state={workspaceState} />
+              </Panel>
+            </>
+          )}
 
         </PanelGroup>
       ) : (
