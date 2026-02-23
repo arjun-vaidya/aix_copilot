@@ -3,7 +3,6 @@ import type { ChatMessage } from "../aiService";
 
 export class GeminiProvider implements LLMProvider {
     private apiKey: string;
-    // Standard recommended Gemini model for fast logic tracing
     private model = "gemini-2.5-flash";
 
     constructor() {
@@ -44,8 +43,25 @@ export class GeminiProvider implements LLMProvider {
             });
 
             if (!response.ok) {
-                const err = await response.text();
-                throw new Error(`Gemini API Error: ${response.status} - ${err}`);
+                const errText = await response.text();
+                // Parse the raw JSON error into a clean, human-readable message
+                let friendlyMsg = `API returned status ${response.status}.`;
+                try {
+                    const errJson = JSON.parse(errText);
+                    const apiMsg = errJson?.error?.message || errJson?.[0]?.error?.message;
+                    if (apiMsg) {
+                        // Extract just the first sentence before technical details
+                        friendlyMsg = apiMsg.split('\n')[0];
+                    }
+                    if (response.status === 429) {
+                        friendlyMsg = "Rate limit exceeded. Please wait a moment before sending another message.";
+                    } else if (response.status === 403) {
+                        friendlyMsg = "Invalid API key. Please check your VITE_GEMINI_API_KEY in frontend/.env.local";
+                    } else if (response.status === 400) {
+                        friendlyMsg = "Bad request. The prompt may be too long or contain invalid content.";
+                    }
+                } catch (_) { /* keep the generic message */ }
+                throw new Error(friendlyMsg);
             }
 
             if (!response.body) throw new Error("No response body.");
@@ -76,7 +92,8 @@ export class GeminiProvider implements LLMProvider {
             }
         } catch (error: any) {
             console.error("Gemini stream failed", error);
-            onChunkReceived(`\n[API Error: ${error.message}]`);
+            // Prefix with @@ERROR@@ so the UI can detect and style it as an error card
+            onChunkReceived(`@@ERROR@@${error.message}`);
         }
     }
 }

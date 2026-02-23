@@ -1,4 +1,4 @@
-import { Bot, Send, User } from "lucide-react";
+import { Bot, Send, User, AlertTriangle } from "lucide-react";
 import type { WorkspaceState } from "../../pages/Workspace";
 import type { LogEntry } from "./OutputConsole";
 import type { ProblemSet } from "../../lib/problems_mock";
@@ -100,26 +100,51 @@ export default function CoPilotChat({
 
                 {/* Chat History */}
                 <div className="flex flex-col gap-4">
-                    {messages.map((msg, idx) => (
-                        <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''} ${msg.role === 'assistant' && msg.content === "" ? 'hidden' : ''}`}>
-                            <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 ${msg.role === 'user' ? 'bg-slate-800' : 'bg-blue-600'}`}>
-                                {msg.role === 'user' ? <User className="w-3.5 h-3.5 text-white" /> : <Bot className="w-3.5 h-3.5 text-white" />}
+                    {messages.map((msg, idx) => {
+                        const isError = msg.role === 'assistant' && msg.content.startsWith('@@ERROR@@');
+                        const errorText = isError ? msg.content.replace('@@ERROR@@', '') : '';
+
+                        // Hide empty assistant placeholder messages
+                        if (msg.role === 'assistant' && msg.content === '') return null;
+
+                        // Render error card
+                        if (isError) {
+                            return (
+                                <div key={idx} className="flex gap-3">
+                                    <div className="w-6 h-6 rounded bg-amber-500 flex items-center justify-center shrink-0 mt-0.5">
+                                        <AlertTriangle className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                    <div className="p-3 rounded-xl rounded-tl-none shadow-sm text-sm bg-amber-50 border border-amber-200 text-amber-800 max-w-[85%]">
+                                        <p className="font-bold text-amber-900 mb-1 text-xs uppercase tracking-wide">Connection Error</p>
+                                        <p className="text-[13px] leading-relaxed">{errorText}</p>
+                                        <p className="text-[11px] text-red-700 font-semibold mt-2">Contact your instructor if this issue persists.</p>
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        // Render normal message
+                        return (
+                            <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                                <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 ${msg.role === 'user' ? 'bg-slate-800' : 'bg-blue-600'}`}>
+                                    {msg.role === 'user' ? <User className="w-3.5 h-3.5 text-white" /> : <Bot className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                <div className={`p-3 rounded-xl shadow-sm text-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none prose prose-sm max-w-none'}`}>
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkMath]}
+                                        rehypePlugins={[rehypeKatex]}
+                                        components={{
+                                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                            code: ({ node, ...props }) => <code className="bg-slate-100 text-slate-800 font-mono px-1.5 py-0.5 rounded text-[13px] border border-slate-200" {...props} />,
+                                            pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-200 p-2 rounded text-xs my-2 overflow-x-auto" {...props} />
+                                        }}
+                                    >
+                                        {msg.content}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
-                            <div className={`p-3 rounded-xl shadow-sm text-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none prose prose-sm max-w-none'}`}>
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkMath]}
-                                    rehypePlugins={[rehypeKatex]}
-                                    components={{
-                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                                        code: ({ node, ...props }) => <code className="bg-slate-100 text-slate-800 font-mono px-1.5 py-0.5 rounded text-[13px] border border-slate-200" {...props} />,
-                                        pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-200 p-2 rounded text-xs my-2 overflow-x-auto" {...props} />
-                                    }}
-                                >
-                                    {msg.content}
-                                </ReactMarkdown>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     {isTyping && messages[messages.length - 1]?.content === "" && (
                         <div className="flex gap-3">
                             <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
