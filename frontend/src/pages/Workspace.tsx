@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import { MOCK_PROBLEMS } from "../lib/problems_mock";
 import GatekeeperPanel from "../components/workspace/GatekeeperPanel";
@@ -7,10 +7,10 @@ import Editor from "../components/workspace/Editor";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
-import { useRef, useEffect } from "react";
 import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
+export type AuditRecord = { category: string; rationale: string; };
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -30,6 +30,7 @@ export default function Workspace() {
 
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>("GATEKEEPER");
   const [evaluationResult, setEvaluationResult] = useState<"pass" | "fail" | null>(null);
+  const [audits, setAudits] = useState<AuditRecord[]>([]);
 
   // Use a ref for executionMode so the Pyodide WebWorker's stale closure can always access the freshest value
   const executionModeRef = useRef<"simulation" | "test" | null>(null);
@@ -109,7 +110,9 @@ export default function Workspace() {
 
   const handleAuditSubmit = (category: string | null, rationale: string) => {
     // [TODO] In a real app, we would POST this telemetry to the backend here
-    setLogs(l => [...l, { type: "system", text: `\n[Audit Logged] Category: ${category}\nRationale: ${rationale}` }]);
+    if (category) {
+      setAudits(prev => [...prev, { category, rationale }]);
+    }
     setEvaluationResult(null);
     setWorkspaceState("UNLOCKED");
     if (isMobile) setActiveTab("editor");
@@ -228,6 +231,7 @@ export default function Workspace() {
                     constraints={constraints}
                     code={editorCode}
                     logs={logs}
+                    audits={audits}
                   />
                 )}
               </Panel>
@@ -281,6 +285,7 @@ export default function Workspace() {
                   constraints={constraints}
                   code={editorCode}
                   logs={logs}
+                  audits={audits}
                 />
               )
             )}

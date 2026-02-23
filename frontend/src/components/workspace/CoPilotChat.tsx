@@ -1,5 +1,5 @@
 import { Bot, Send, User, AlertTriangle } from "lucide-react";
-import type { WorkspaceState } from "../../pages/Workspace";
+import type { WorkspaceState, AuditRecord } from "../../pages/Workspace";
 import type { LogEntry } from "./OutputConsole";
 import type { ProblemSet } from "../../lib/problems_mock";
 import { useState, useRef, useEffect } from "react";
@@ -15,7 +15,8 @@ export default function CoPilotChat({
     objective,
     constraints,
     code,
-    logs
+    logs,
+    audits
 }: {
     state: WorkspaceState;
     problem: ProblemSet;
@@ -23,6 +24,7 @@ export default function CoPilotChat({
     constraints: string;
     code: string;
     logs: LogEntry[];
+    audits: AuditRecord[];
 }) {
     const isLocked = state === "GATEKEEPER" || state === "LOCKED";
 
@@ -54,7 +56,7 @@ export default function CoPilotChat({
         // Add a temporary empty assistant message for streaming
         setMessages(prev => [...prev, { role: "assistant", content: "" }]);
 
-        const context = { problem, objective, constraints, code, logs };
+        const context = { problem, objective, constraints, code, logs, audits };
 
         await simulateStreamingCoPilot(currentHistory, context, (chunk) => {
             setMessages(prev => {
