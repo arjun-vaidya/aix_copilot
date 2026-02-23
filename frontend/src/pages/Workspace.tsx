@@ -6,8 +6,9 @@ import GatekeeperPanel from "../components/workspace/GatekeeperPanel";
 import Editor from "../components/workspace/Editor";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
+import AuditPanel from "../components/workspace/AuditPanel";
 import { useRef, useEffect } from "react";
-import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
 function useIsMobile() {
@@ -28,6 +29,12 @@ export default function Workspace() {
   const problem = id && MOCK_PROBLEMS[id] ? MOCK_PROBLEMS[id] : null;
 
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>("GATEKEEPER");
+  const [evaluationResult, setEvaluationResult] = useState<"pass" | "fail" | null>(null);
+
+  // Use a ref for executionMode so the Pyodide WebWorker's stale closure can always access the freshest value
+  const executionModeRef = useRef<"simulation" | "test" | null>(null);
+  const [executionModeState, setExecutionModeState] = useState<"simulation" | "test" | null>(null);
+
   const [logs, setLogs] = useState<LogEntry[]>([{ type: "system", text: "Pyodide Kernel Waiting..." }]);
   const workerRef = useRef<Worker | null>(null);
 
@@ -62,10 +69,19 @@ export default function Workspace() {
           setLogs(l => [...l, { type: data.type, text: data.text }]);
         } else if (data.type === 'success') {
           setLogs(l => [...l, { type: "success", text: `\n[Simulation Completed] Return Output: ${data.result}` }]);
+          setEvaluationResult("pass");
           setWorkspaceState("EVALUATION");
         } else if (data.type === 'error') {
           setLogs(l => [...l, { type: "error", text: `\n[Exception] ${data.error}` }]);
-          setWorkspaceState("EVALUATION");
+
+          if (executionModeRef.current === "test") {
+            setEvaluationResult("fail");
+            setWorkspaceState("EVALUATION");
+            if (isMobile) setActiveTab("copilot"); // Force switch to audit panel on mobile
+          } else {
+            // Basic simulation runs don't lock the editor on failure
+            setWorkspaceState("UNLOCKED");
+          }
         }
       }
     }
@@ -74,6 +90,8 @@ export default function Workspace() {
 
   const handleRunSimulation = () => {
     setWorkspaceState("EXECUTION");
+    executionModeRef.current = "simulation";
+    setExecutionModeState("simulation");
     setLogs(l => [...l, { type: "system", text: "\n> Executing main.py..." }]);
     const worker = getWorker();
     worker.postMessage({ code: editorCode, id: Date.now() });
@@ -82,9 +100,19 @@ export default function Workspace() {
   const handleRunTests = () => {
     if (!problem?.unitTestPath) return;
     setWorkspaceState("EXECUTION");
+    executionModeRef.current = "test";
+    setExecutionModeState("test");
     setLogs(l => [...l, { type: "system", text: `\n> Initiating Validation Suite [${problem.unitTestPath}]...` }]);
     const worker = getWorker();
     worker.postMessage({ code: editorCode, id: Date.now(), testPath: problem.unitTestPath });
+  }
+
+  const handleAuditSubmit = (category: string | null, rationale: string) => {
+    // [TODO] In a real app, we would POST this telemetry to the backend here
+    setLogs(l => [...l, { type: "system", text: `\n[Audit Logged] Category: ${category}\nRationale: ${rationale}` }]);
+    setEvaluationResult(null);
+    setWorkspaceState("UNLOCKED");
+    if (isMobile) setActiveTab("editor");
   }
 
   if (!problem) {
@@ -161,9 +189,10 @@ export default function Workspace() {
                 <Editor
                   problem={problem}
                   state={workspaceState}
+                  evaluationResult={evaluationResult}
+                  executionMode={executionModeState}
                   onRun={handleRunSimulation}
                   onRunTests={handleRunTests}
-                  onExecutionFinished={(pass) => setWorkspaceState(pass ? "EVALUATION" : "LOCKED")}
                   code={editorCode}
                   setCode={setEditorCode}
                 />
@@ -184,16 +213,23 @@ export default function Workspace() {
                 <div className="w-0.5 h-8 bg-slate-300 rounded-full"></div>
               </PanelResizeHandle>
 
-              {/* RIGHT PANEL: Co-Pilot */}
+              {/* RIGHT PANEL: Co-Pilot or Audit */}
               <Panel defaultSize={25} minSize={20} className="bg-white flex flex-col z-0">
-                <CoPilotChat
-                  state={workspaceState}
-                  problem={problem}
-                  objective={objective}
-                  constraints={constraints}
-                  code={editorCode}
-                  logs={logs}
-                />
+                {workspaceState === "EVALUATION" && evaluationResult === "fail" && executionModeState === "test" ? (
+                  <AuditPanel
+                    rawErrorLog={logs.filter(l => l.type === 'error').pop()?.text || ""}
+                    onSubmitAudit={handleAuditSubmit}
+                  />
+                ) : (
+                  <CoPilotChat
+                    state={workspaceState}
+                    problem={problem}
+                    objective={objective}
+                    constraints={constraints}
+                    code={editorCode}
+                    logs={logs}
+                  />
+                )}
               </Panel>
             </>
           )}
@@ -219,8 +255,9 @@ export default function Workspace() {
                   <Editor
                     problem={problem}
                     state={workspaceState}
+                    evaluationResult={evaluationResult}
+                    executionMode={executionModeState}
                     onRun={handleRunSimulation}
-                    onExecutionFinished={(pass) => setWorkspaceState(pass ? "EVALUATION" : "LOCKED")}
                     code={editorCode}
                     setCode={setEditorCode}
                   />
@@ -230,14 +267,23 @@ export default function Workspace() {
                 </div>
               </div>
             )}
-            {activeTab === "copilot" && <CoPilotChat
-              state={workspaceState}
-              problem={problem}
-              objective={objective}
-              constraints={constraints}
-              code={editorCode}
-              logs={logs}
-            />}
+            {activeTab === "copilot" && (
+              workspaceState === "EVALUATION" && evaluationResult === "fail" && executionModeState === "test" ? (
+                <AuditPanel
+                  rawErrorLog={logs.filter(l => l.type === 'error').pop()?.text || ""}
+                  onSubmitAudit={handleAuditSubmit}
+                />
+              ) : (
+                <CoPilotChat
+                  state={workspaceState}
+                  problem={problem}
+                  objective={objective}
+                  constraints={constraints}
+                  code={editorCode}
+                  logs={logs}
+                />
+              )
+            )}
           </div>
 
           {/* Floating Bottom Tab Bar for Mobile */}
@@ -274,10 +320,22 @@ export default function Workspace() {
             <div className="relative w-full h-full flex flex-col items-center justify-center">
               <button
                 onClick={() => { if (workspaceState !== "LOCKED" && workspaceState !== "GATEKEEPER") setActiveTab("copilot"); }}
-                className={`w-full h-full flex flex-col items-center justify-center gap-1 transition-colors ${activeTab === "copilot" ? "text-blue-600" : "text-slate-500 hover:text-slate-900"} ${(workspaceState === "LOCKED" || workspaceState === "GATEKEEPER") ? "opacity-30" : ""}`}
+                className={`w-full h-full flex flex-col items-center justify-center gap-1 transition-colors ${(workspaceState === "LOCKED" || workspaceState === "GATEKEEPER") ? "opacity-30" : ""} ${activeTab === "copilot" ? (workspaceState === "EVALUATION" && evaluationResult === "fail" && executionModeState === "test" ? "text-red-600" : "text-blue-600") : "text-slate-500 hover:text-slate-900"}`}
               >
-                <Bot className="w-5 h-5" />
-                <span className="text-[10px] font-bold">Co-Pilot</span>
+                {workspaceState === "EVALUATION" && evaluationResult === "fail" && executionModeState === "test" ? (
+                  <>
+                    <div className="relative">
+                      <AlertTriangle className="w-5 h-5 absolute inset-0 animate-ping text-red-400 opacity-50" />
+                      <AlertTriangle className="w-5 h-5 relative z-10 text-red-600" />
+                    </div>
+                    <span className="text-[10px] font-bold">Audit</span>
+                  </>
+                ) : (
+                  <>
+                    <Bot className="w-5 h-5" />
+                    <span className="text-[10px] font-bold">Co-Pilot</span>
+                  </>
+                )}
               </button>
               {(workspaceState === "LOCKED" || workspaceState === "GATEKEEPER") && (
                 <div className="absolute inset-x-0 bottom-2 top-0 bg-white/40 backdrop-blur-[1px] flex items-center justify-center z-10 cursor-not-allowed">

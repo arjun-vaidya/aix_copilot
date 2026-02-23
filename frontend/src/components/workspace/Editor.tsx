@@ -6,6 +6,8 @@ import type { WorkspaceState } from "../../pages/Workspace";
 export default function Editor({
     problem,
     state,
+    evaluationResult,
+    executionMode,
     onRun,
     onRunTests,
     code,
@@ -13,13 +15,14 @@ export default function Editor({
 }: {
     problem: ProblemSet;
     state: WorkspaceState;
+    evaluationResult?: "pass" | "fail" | null;
+    executionMode?: "simulation" | "test" | null;
     onRun: () => void;
     onRunTests?: () => void;
-    onExecutionFinished: (pass: boolean) => void;
     code: string;
     setCode: (val: string) => void;
 }) {
-    const isLocked = state === "GATEKEEPER" || state === "LOCKED";
+    const isLocked = state === "GATEKEEPER" || state === "LOCKED" || (state === "EVALUATION" && evaluationResult === "fail" && executionMode === "test");
 
     const handleRun = () => {
         if (isLocked) return;
@@ -63,12 +66,18 @@ export default function Editor({
             <div className="flex-1 relative">
                 {isLocked && (
                     <div className="absolute inset-0 z-20 bg-slate-100/80 backdrop-blur-[1px] flex items-center justify-center">
-                        <div className="bg-white px-6 py-4 rounded-xl shadow border border-slate-200 flex flex-col items-center gap-2 text-center max-w-xs">
+                        <div className="bg-white px-6 py-4 rounded-xl shadow border border-slate-200 flex flex-col items-center gap-2 text-center max-w-xs transition-all animate-in fade-in zoom-in-95 duration-200">
                             <span className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-1">
                                 <Lock className="w-5 h-5 text-slate-400" />
                             </span>
-                            <h3 className="text-sm font-bold text-slate-900">Workspace Locked</h3>
-                            <p className="text-xs text-slate-500 font-medium leading-relaxed">Complete the Gatekeeper objective and constraints on the left to edit code.</p>
+                            <h3 className="text-sm font-bold text-slate-900">
+                                {state === "EVALUATION" ? "Editor Locked for Audit" : "Workspace Locked"}
+                            </h3>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                                {state === "EVALUATION"
+                                    ? "Complete the failure analysis in the sidebar to resume your work."
+                                    : "Complete the Gatekeeper objective and constraints on the left to edit code."}
+                            </p>
                         </div>
                     </div>
                 )}
