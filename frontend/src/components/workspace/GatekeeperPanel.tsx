@@ -1,5 +1,4 @@
 import { CheckCircle2, Lock } from "lucide-react";
-import { useState } from "react";
 import type { ProblemSet } from "../../lib/problems_mock";
 import type { WorkspaceState } from "../../pages/Workspace";
 
@@ -7,13 +6,19 @@ export default function GatekeeperPanel({
     problem,
     state,
     onUnlock,
+    objective,
+    setObjective,
+    constraints,
+    setConstraints,
 }: {
     problem: ProblemSet;
     state: WorkspaceState;
     onUnlock: () => void;
+    objective: string;
+    setObjective: (val: string) => void;
+    constraints: string;
+    setConstraints: (val: string) => void;
 }) {
-    const [objective, setObjective] = useState("");
-    const [constraints, setConstraints] = useState("");
 
     const isUnlocked = state !== "GATEKEEPER" && state !== "LOCKED";
     const isValid = objective.trim().length > 5 && constraints.trim().length > 5;

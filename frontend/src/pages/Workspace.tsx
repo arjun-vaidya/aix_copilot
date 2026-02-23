@@ -33,6 +33,10 @@ export default function Workspace() {
   const [logs, setLogs] = useState<LogEntry[]>([{ type: "system", text: "Pyodide Kernel Waiting..." }]);
   const workerRef = useRef<Worker | null>(null);
 
+  // Gatekeeper input states
+  const [objective, setObjective] = useState("");
+  const [constraints, setConstraints] = useState("");
+
   // Layout states
   const [isCopilotVisible, setIsCopilotVisible] = useState(true);
 
@@ -126,7 +130,15 @@ export default function Workspace() {
 
           {/* LEFT PANEL: Gatekeeper */}
           <Panel defaultSize={20} minSize={15} className="bg-white flex flex-col border-r border-slate-200 z-0">
-            <GatekeeperPanel problem={problem} state={workspaceState} onUnlock={handleUnlock} />
+            <GatekeeperPanel
+              problem={problem}
+              state={workspaceState}
+              onUnlock={handleUnlock}
+              objective={objective}
+              setObjective={setObjective}
+              constraints={constraints}
+              setConstraints={setConstraints}
+            />
           </Panel>
 
           <PanelResizeHandle className="w-1.5 bg-slate-100 hover:bg-blue-200 transition-colors cursor-col-resize flex flex-col justify-center items-center z-10 border-r border-slate-200">
@@ -168,7 +180,15 @@ export default function Workspace() {
         <div className="flex-1 flex flex-col h-full bg-white pb-[68px]">
           {/* Main content area */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {activeTab === "gatekeeper" && <GatekeeperPanel problem={problem} state={workspaceState} onUnlock={handleUnlock} />}
+            {activeTab === "gatekeeper" && <GatekeeperPanel
+              problem={problem}
+              state={workspaceState}
+              onUnlock={handleUnlock}
+              objective={objective}
+              setObjective={setObjective}
+              constraints={constraints}
+              setConstraints={setConstraints}
+            />}
             {activeTab === "editor" && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="h-3/5 border-b border-slate-200">
