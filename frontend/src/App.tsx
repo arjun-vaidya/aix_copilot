@@ -32,7 +32,7 @@ function App() {
   // Once authenticated, render the main application layout
   return (
     <Router>
-      <div className="flex flex-col md:flex-row h-screen w-full bg-[#f8f9fa] overflow-hidden">
+      <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#f8f9fa] overflow-hidden">
         {/* Persistent Global Sidebar */}
         <Sidebar onLogout={handleLogout} />
 

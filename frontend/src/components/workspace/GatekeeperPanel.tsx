@@ -24,9 +24,9 @@ export default function GatekeeperPanel({
     const isValid = objective.trim().length > 5 && constraints.trim().length > 5;
 
     return (
-        <div className="flex-1 flex flex-col overflow-y-auto">
+        <div className="flex-1 flex flex-col overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
 
-            <div className="p-5 flex flex-col gap-6">
+            <div className="p-5 flex flex-col gap-6 pb-24 md:pb-5">
 
                 {/* Problem Statement Section (Always visible, styled like a heading now) */}
                 <div className="flex flex-col mb-2">
