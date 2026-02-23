@@ -45,18 +45,18 @@ export default function Editor({
                         <button
                             onClick={() => !isLocked && state !== "EXECUTION" && onRunTests?.()}
                             disabled={isLocked || state === "EXECUTION"}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-md text-xs font-bold transition-colors shadow-sm"
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 disabled:bg-slate-50 disabled:border-slate-100 disabled:text-slate-400 text-slate-900 rounded-md text-xs font-bold transition-all shadow-sm"
                         >
-                            <Code2 className="w-3.5 h-3.5" />
+                            <Code2 className="w-3.5 h-3.5 text-indigo-500" />
                             Run Tests
                         </button>
                     )}
                     <button
                         onClick={handleRun}
                         disabled={isLocked || state === "EXECUTION"}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 text-white rounded-md text-xs font-bold transition-colors shadow-sm"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 disabled:bg-slate-50 disabled:border-slate-100 disabled:text-slate-400 text-slate-900 rounded-md text-xs font-bold transition-all shadow-sm"
                     >
-                        <Play className="w-3.5 h-3.5" />
+                        <Play className="w-3.5 h-3.5 text-emerald-500" />
                         {state === "EXECUTION" ? "Running..." : "Run Simulation"}
                     </button>
                 </div>
