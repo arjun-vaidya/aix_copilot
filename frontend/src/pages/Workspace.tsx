@@ -10,8 +10,6 @@ import { useRef, useEffect } from "react";
 import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
-
-// Simple custom hook to track mobile viewport
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -36,6 +34,9 @@ export default function Workspace() {
   // Gatekeeper input states
   const [objective, setObjective] = useState("");
   const [constraints, setConstraints] = useState("");
+
+  // Editor Code State
+  const [editorCode, setEditorCode] = useState<string>(problem?.initialCode || "");
 
   // Layout states
   const [isCopilotVisible, setIsCopilotVisible] = useState(true);
@@ -71,11 +72,11 @@ export default function Workspace() {
     return workerRef.current;
   }
 
-  const handleRunSimulation = (code: string) => {
+  const handleRunSimulation = () => {
     setWorkspaceState("EXECUTION");
     setLogs(l => [...l, { type: "system", text: "\n> Executing main.py..." }]);
     const worker = getWorker();
-    worker.postMessage({ code, id: Date.now() });
+    worker.postMessage({ code: editorCode, id: Date.now() });
   }
 
   if (!problem) {
@@ -149,7 +150,14 @@ export default function Workspace() {
           <Panel defaultSize={55} minSize={30} className="flex flex-col bg-white">
             <PanelGroup orientation="vertical">
               <Panel defaultSize={70} minSize={30} className="flex flex-col">
-                <Editor problem={problem} state={workspaceState} onRun={handleRunSimulation} onExecutionFinished={(pass) => setWorkspaceState(pass ? "EVALUATION" : "LOCKED")} />
+                <Editor
+                  problem={problem}
+                  state={workspaceState}
+                  onRun={handleRunSimulation}
+                  onExecutionFinished={(pass) => setWorkspaceState(pass ? "EVALUATION" : "LOCKED")}
+                  code={editorCode}
+                  setCode={setEditorCode}
+                />
               </Panel>
               <PanelResizeHandle className="h-1.5 bg-slate-100 border-y border-slate-200 hover:bg-blue-200 transition-colors cursor-row-resize flex justify-center items-center z-10">
                 <div className="w-8 h-0.5 bg-slate-300 rounded-full"></div>
@@ -169,7 +177,14 @@ export default function Workspace() {
 
               {/* RIGHT PANEL: Co-Pilot */}
               <Panel defaultSize={25} minSize={20} className="bg-white flex flex-col z-0">
-                <CoPilotChat state={workspaceState} />
+                <CoPilotChat
+                  state={workspaceState}
+                  problem={problem}
+                  objective={objective}
+                  constraints={constraints}
+                  code={editorCode}
+                  logs={logs}
+                />
               </Panel>
             </>
           )}
@@ -192,14 +207,28 @@ export default function Workspace() {
             {activeTab === "editor" && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="h-3/5 border-b border-slate-200">
-                  <Editor problem={problem} state={workspaceState} onRun={handleRunSimulation} onExecutionFinished={(pass) => setWorkspaceState(pass ? "EVALUATION" : "LOCKED")} />
+                  <Editor
+                    problem={problem}
+                    state={workspaceState}
+                    onRun={handleRunSimulation}
+                    onExecutionFinished={(pass) => setWorkspaceState(pass ? "EVALUATION" : "LOCKED")}
+                    code={editorCode}
+                    setCode={setEditorCode}
+                  />
                 </div>
                 <div className="h-2/5 flex flex-col bg-[#0d1117] relative">
                   <OutputConsole logs={logs} />
                 </div>
               </div>
             )}
-            {activeTab === "copilot" && <CoPilotChat state={workspaceState} />}
+            {activeTab === "copilot" && <CoPilotChat
+              state={workspaceState}
+              problem={problem}
+              objective={objective}
+              constraints={constraints}
+              code={editorCode}
+              logs={logs}
+            />}
           </div>
 
           {/* Floating Bottom Tab Bar for Mobile */}

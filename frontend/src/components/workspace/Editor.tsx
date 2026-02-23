@@ -2,25 +2,25 @@ import { Play, Code2, Lock } from "lucide-react";
 import MonacoEditor from "@monaco-editor/react";
 import type { ProblemSet } from "../../lib/problems_mock";
 import type { WorkspaceState } from "../../pages/Workspace";
-import { useState } from "react";
 
 export default function Editor({
-    problem,
     state,
     onRun,
+    code,
+    setCode
 }: {
     problem: ProblemSet;
     state: WorkspaceState;
-    onRun: (code: string) => void;
+    onRun: () => void;
     onExecutionFinished: (pass: boolean) => void;
+    code: string;
+    setCode: (val: string) => void;
 }) {
-    const [code, setCode] = useState(problem.initialCode);
-
     const isLocked = state === "GATEKEEPER" || state === "LOCKED";
 
     const handleRun = () => {
         if (isLocked) return;
-        onRun(code);
+        onRun();
     };
 
     return (

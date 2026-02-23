@@ -1,12 +1,86 @@
-import { Bot, Send } from "lucide-react";
+import { Bot, Send, User } from "lucide-react";
 import type { WorkspaceState } from "../../pages/Workspace";
+import type { LogEntry } from "./OutputConsole";
+import type { ProblemSet } from "../../lib/problems_mock";
+import { useState, useRef, useEffect } from "react";
+import { simulateStreamingCoPilot, type ChatMessage } from "../../lib/aiService";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
-export default function CoPilotChat({ state }: { state: WorkspaceState }) {
+export default function CoPilotChat({
+    state,
+    problem,
+    objective,
+    constraints,
+    code,
+    logs
+}: {
+    state: WorkspaceState;
+    problem: ProblemSet;
+    objective: string;
+    constraints: string;
+    code: string;
+    logs: LogEntry[];
+}) {
     const isLocked = state === "GATEKEEPER" || state === "LOCKED";
+
+    const [messages, setMessages] = useState<ChatMessage[]>([
+        { role: "assistant", content: "Hello! I'm here to help you reason through your numerical simulation. How can we start forming the solution according to your constraints?" }
+    ]);
+    const [inputValue, setInputValue] = useState("");
+    const [isTyping, setIsTyping] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    const handleSend = async () => {
+        if (!inputValue.trim() || isLocked || isTyping) return;
+
+        const userMsg: ChatMessage = { role: "user", content: inputValue.trim() };
+        setMessages(prev => [...prev, userMsg]);
+        setInputValue("");
+        setIsTyping(true);
+
+        const currentHistory = [...messages, userMsg];
+
+        // Add a temporary empty assistant message for streaming
+        setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+        const context = { problem, objective, constraints, code, logs };
+
+        await simulateStreamingCoPilot(currentHistory, context, (chunk) => {
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const lastIdx = newMessages.length - 1;
+                newMessages[lastIdx] = {
+                    ...newMessages[lastIdx],
+                    content: newMessages[lastIdx].content + chunk
+                };
+                return newMessages;
+            });
+        });
+
+        setIsTyping(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
 
     return (
         <div className="flex-1 flex flex-col h-full bg-slate-50 relative">
-            <div className="h-14 bg-white border-b border-slate-200 flex items-center px-4 shrink-0 shadow-sm z-10">
+            <div className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-10">
                 <div className="flex items-center gap-2">
                     <div className="w-7 h-7 bg-blue-100 rounded-md flex items-center justify-center">
                         <Bot className="w-4 h-4 text-blue-600" />
@@ -24,16 +98,41 @@ export default function CoPilotChat({ state }: { state: WorkspaceState }) {
                     </div>
                 )}
 
-                {/* Dummy Chat History */}
+                {/* Chat History */}
                 <div className="flex flex-col gap-4">
-                    <div className="flex gap-3">
-                        <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
-                            <Bot className="w-3.5 h-3.5 text-white" />
+                    {messages.map((msg, idx) => (
+                        <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''} ${msg.role === 'assistant' && msg.content === "" ? 'hidden' : ''}`}>
+                            <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 ${msg.role === 'user' ? 'bg-slate-800' : 'bg-blue-600'}`}>
+                                {msg.role === 'user' ? <User className="w-3.5 h-3.5 text-white" /> : <Bot className="w-3.5 h-3.5 text-white" />}
+                            </div>
+                            <div className={`p-3 rounded-xl shadow-sm text-sm ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none prose prose-sm max-w-none'}`}>
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
+                                    components={{
+                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                        code: ({ node, ...props }) => <code className="bg-slate-100 text-slate-800 font-mono px-1.5 py-0.5 rounded text-[13px] border border-slate-200" {...props} />,
+                                        pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-200 p-2 rounded text-xs my-2 overflow-x-auto" {...props} />
+                                    }}
+                                >
+                                    {msg.content}
+                                </ReactMarkdown>
+                            </div>
                         </div>
-                        <div className="bg-white border border-slate-200 p-3 rounded-xl rounded-tl-none shadow-sm text-sm text-slate-700">
-                            Hello! I'm here to help you reason through your numerical simulation. How can we start forming the solution according to your constraints?
+                    ))}
+                    {isTyping && messages[messages.length - 1]?.content === "" && (
+                        <div className="flex gap-3">
+                            <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                                <Bot className="w-3.5 h-3.5 text-white" />
+                            </div>
+                            <div className="bg-white border border-slate-200 p-3 rounded-xl rounded-tl-none shadow-sm flex gap-1 items-center h-[42px]">
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-75"></span>
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+                                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-300"></span>
+                            </div>
                         </div>
-                    </div>
+                    )}
+                    <div ref={messagesEndRef} />
                 </div>
             </div>
 
@@ -41,13 +140,17 @@ export default function CoPilotChat({ state }: { state: WorkspaceState }) {
             <div className="p-3 bg-white border-t border-slate-200 shrink-0">
                 <div className="relative">
                     <textarea
-                        disabled={isLocked}
+                        disabled={isLocked || isTyping}
                         rows={2}
-                        placeholder={isLocked ? "Chat locked..." : "Ask physics logic questions..."}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder={isLocked ? "Chat locked..." : isTyping ? "TA is evaluating..." : "Ask physics logic questions..."}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl pr-10 pl-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 resize-none transition-all"
                     />
                     <button
-                        disabled={isLocked}
+                        onClick={handleSend}
+                        disabled={isLocked || isTyping || !inputValue.trim()}
                         className="absolute bottom-2 right-2 w-7 h-7 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 rounded-lg flex items-center justify-center transition-colors shadow-sm"
                     >
                         <Send className="w-3.5 h-3.5 text-white ml-px" />
