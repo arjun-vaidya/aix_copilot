@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { name: "Settings", path: "/settings", Icon: Settings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -101,7 +101,10 @@ export default function Sidebar() {
             </div>
           </div>
 
-          <button className="flex items-center gap-3 mt-8 text-sm font-medium text-gray-600 hover:text-gray-900 w-full transition-colors">
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-3 mt-8 text-sm font-medium text-gray-600 hover:text-gray-900 w-full transition-colors"
+          >
             <LogOut className="w-5 h-5" />
             Log out
           </button>

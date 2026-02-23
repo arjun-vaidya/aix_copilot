@@ -25,3 +25,8 @@ All AI agents assisting in the development of this repository must strictly adhe
    - All UI designs must be built to function and look clean on mobile devices.
    - Fluidly wrap Flex and Grid layouts on smaller screens using Tailwind breakpoints (e.g. \`flex-col lg:flex-row\`).
    - Use responsive padding, margins, and font sizes to ensure elements are not truncated or squished off-screen.
+
+6. **Extreme Security Priority (Authentication & Data)**
+   - Security is an extreme priority that can never be compromised.
+   - For features like DUO authentication or any SSO/Login mechanism, follow industry-standard secure implementation patterns.
+   - Never hardcode credentials, secrets, or bypass security constraints for convenience.
