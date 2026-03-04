@@ -1,5 +1,5 @@
 import { CheckCircle2, Lock } from "lucide-react";
-import type { ProblemSet } from "../../lib/problems_mock";
+import type { ProblemSet } from "../../lib/problemLoader";
 import type { WorkspaceState } from "../../pages/Workspace";
 
 export default function GatekeeperPanel({

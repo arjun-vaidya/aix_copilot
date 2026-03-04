@@ -1,7 +1,7 @@
 import { Bot, Send, User, AlertTriangle } from "lucide-react";
 import type { WorkspaceState, AuditRecord } from "../../pages/Workspace";
 import type { LogEntry } from "./OutputConsole";
-import type { ProblemSet } from "../../lib/problems_mock";
+import type { ProblemSet } from "../../lib/problemLoader";
 import { useState, useRef, useEffect } from "react";
 import { simulateStreamingCoPilot, type ChatMessage } from "../../lib/aiService";
 import ReactMarkdown from "react-markdown";

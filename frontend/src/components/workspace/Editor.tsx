@@ -1,6 +1,6 @@
 import { Play, Code2, Lock } from "lucide-react";
 import MonacoEditor from "@monaco-editor/react";
-import type { ProblemSet } from "../../lib/problems_mock";
+import type { ProblemSet } from "../../lib/problemLoader";
 import type { WorkspaceState } from "../../pages/Workspace";
 
 export default function Editor({

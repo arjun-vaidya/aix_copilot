@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
-import { MOCK_PROBLEMS } from "../lib/problems_mock";
+import { loadProblemById, type ProblemSet } from "../lib/problemLoader";
 import GatekeeperPanel from "../components/workspace/GatekeeperPanel";
 import Editor from "../components/workspace/Editor";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
@@ -27,7 +27,17 @@ function useIsMobile() {
 
 export default function Workspace() {
   const { id } = useParams();
-  const problem = id && MOCK_PROBLEMS[id] ? MOCK_PROBLEMS[id] : null;
+  const [problem, setProblem] = useState<ProblemSet | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) { setIsLoading(false); return; }
+    setIsLoading(true);
+    loadProblemById(id).then((loadedProblem) => {
+      setProblem(loadedProblem);
+      setIsLoading(false);
+    });
+  }, [id]);
 
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>("GATEKEEPER");
   const [evaluationResult, setEvaluationResult] = useState<"pass" | "fail" | null>(null);
@@ -49,7 +59,14 @@ export default function Workspace() {
   const [constraints, setConstraints] = useState("");
 
   // Editor Code State
-  const [editorCode, setEditorCode] = useState<string>(problem?.initialCode || "");
+  const [editorCode, setEditorCode] = useState<string>("");
+
+  // Sync editor code when problem loads from YAML
+  useEffect(() => {
+    if (problem?.initialCode) {
+      setEditorCode(problem.initialCode);
+    }
+  }, [problem]);
 
   // Layout states
   const [isCopilotVisible, setIsCopilotVisible] = useState(true);
@@ -121,6 +138,10 @@ export default function Workspace() {
     setEvaluationResult(null);
     setWorkspaceState("UNLOCKED");
     if (isMobile) setActiveTab("editor");
+  }
+
+  if (isLoading) {
+    return <div className="h-full w-full flex items-center justify-center text-slate-400 text-sm font-medium">Loading problem...</div>;
   }
 
   if (!problem) {

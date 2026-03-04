@@ -1,4 +1,4 @@
-import type { ProblemSet } from "./problems_mock";
+import type { ProblemSet } from "./problemLoader";
 import type { LogEntry } from "../components/workspace/OutputConsole";
 import { LLMFactory } from "./llm/factory";
 
