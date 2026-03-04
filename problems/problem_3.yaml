@@ -1,0 +1,68 @@
+id: "3"
+title: "2.1 CSTR Conversion Sensitivity"
+topic: "Finite-Difference Differentiation"
+description: >
+  Estimate the temperature sensitivity of conversion dX/dT in a
+  continuously-stirred tank reactor (CSTR) with first-order Arrhenius
+  kinetics using the central-difference approximation. The conversion
+  is X(T) = k(T)τ / (1 + k(T)τ), where k(T) = k₀ exp(−Eₐ/RT).
+  Evaluate the derivative across a range of operating temperatures
+  and validate your numerical results.
+difficulty: "Intermediate"
+
+objective_placeholder: "e.g. Estimate the sensitivity dX/dT of a CSTR conversion using numerical differentiation..."
+constraint_placeholder: "e.g. k₀ = 1.0e6 s⁻¹, Eₐ = 80000 J/mol, R = 8.314 J/(mol·K), τ = 2.0 s, T₀ = 300–500 K..."
+
+datasets:
+  - description: "No external dataset is required. The model parameters are provided in the problem statement."
+    fields:
+      - name: "k₀"
+        type: "float"
+        desc: "Pre-exponential factor (1/s)"
+      - name: "Eₐ"
+        type: "float"
+        desc: "Activation energy (J/mol)"
+      - name: "R"
+        type: "float"
+        desc: "Ideal gas constant (J/(mol·K))"
+      - name: "τ"
+        type: "float"
+        desc: "Space time (s)"
+      - name: "T₀"
+        type: "float"
+        desc: "Operating temperature range (K)"
+
+initial_code: |
+  # AI4Numerics Editor
+  # CSTR Conversion Sensitivity via Central Differences
+
+  import numpy as np
+
+  # Given parameters
+  k0 = 1.0e6       # Pre-exponential factor [1/s]
+  Ea = 80000.0      # Activation energy [J/mol]
+  R  = 8.314        # Ideal gas constant [J/(mol*K)]
+  tau = 2.0         # Space time [s]
+
+  # Step 1: Implement k(T) — Arrhenius rate constant
+  def k_arrhenius(T):
+      # TODO: return k0 * exp(-Ea / (R*T))
+      pass
+
+  # Step 2: Implement X(T) — CSTR conversion
+  def X_CSTR(T):
+      # TODO: return k(T)*tau / (1 + k(T)*tau)
+      pass
+
+  # Step 3: Implement central-difference derivative
+  def central_difference(f, T_values, h):
+      # TODO: return (f(T+h) - f(T-h)) / (2h)
+      pass
+
+  # Step 4: Evaluate dX/dT over 300–500 K
+  T_grid = np.linspace(300, 500, 201)
+  h = 0.5  # step size [K]
+
+  # TODO: Compute X_vals and dXdT_vals using your functions above
+
+unit_test_path: "/unit_tests/problem_3.py"

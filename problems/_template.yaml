@@ -1,0 +1,77 @@
+# ============================================================
+# AI4Numerics — Problem Definition Template
+# ============================================================
+# Instructions:
+#   1. Copy this file and rename it (for example: problem_4.yaml).
+#   2. Fill in every field below.
+#   3. Place any unit test file in frontend/public/unit_tests/.
+#   4. The platform will load this YAML to generate the student
+#      workspace automatically.
+# ============================================================
+
+# Unique numeric identifier for this problem (must not collide)
+id: "4"
+
+# Display title shown in the dashboard and workspace header
+# Convention: "[Chapter].[Section] Descriptive Title"
+title: "1.3 Example Problem Title"
+
+# Short topic tag displayed as a badge (e.g., "Linear Algebra", "ODEs")
+topic: "Numerical Methods Topic"
+
+# Full problem description shown in the Gatekeeper panel.
+# Supports plain text. Keep it concise but self-contained:
+# students should understand the task from this alone.
+description: >
+  Describe the engineering or scientific context of this problem.
+  State what the student needs to accomplish numerically.
+  Mention the key equations, models, or datasets involved.
+
+# Difficulty badge: one of "Beginner", "Intermediate", "Advanced"
+difficulty: "Intermediate"
+
+# Placeholder text shown in the Gatekeeper "Objective" textarea
+# to guide students on what to type
+objective_placeholder: "e.g. Implement a numerical method to solve..."
+
+# Placeholder text shown in the Gatekeeper "Constraints" textarea
+constraint_placeholder: "e.g. Use step size h = 0.01, tolerance = 1e-6..."
+
+# Dataset information displayed in the Gatekeeper panel.
+# If no external dataset is needed, use description: "No external dataset required."
+# Each entry describes one data source the student will work with.
+datasets:
+  - description: "Description of the dataset or parameter table."
+    fields:
+      - name: "field_name"
+        type: "float"          # float, int, string, etc.
+        desc: "What this field represents"
+      - name: "another_field"
+        type: "int"
+        desc: "Description of this field"
+
+# Starter code pre-loaded into the Monaco editor.
+# Use Python. Include imports, given parameters, and TODO stubs.
+# Students fill in the TODOs with help from the AI Co-Pilot.
+initial_code: |
+  # AI4Numerics Editor
+  # Problem: [Title]
+
+  import numpy as np
+
+  # Given parameters
+  param1 = 1.0
+  param2 = 2.0
+
+  # Step 1: Implement the core function
+  def my_function(x):
+      # TODO: Implement this
+      pass
+
+  # Step 2: Compute the result
+  # TODO: Call my_function and store the result
+
+# Path to the unit test file (relative to frontend/public/).
+# This file will be fetched and executed by Pyodide after the
+# student's code runs. Set to null if no unit tests exist.
+unit_test_path: "/unit_tests/problem_4.py"
