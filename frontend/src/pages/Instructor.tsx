@@ -1,26 +1,42 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, FileText, Loader2 } from "lucide-react";
 import { loadInstructorProblems, type ProblemSet } from "../lib/problemLoader";
+import { createAndCommitProblem } from "../lib/githubService";
 import CreateProblemModal from "../components/instructor/CreateProblemModal";
 
 export default function Instructor() {
   const [problemSets, setProblemSets] = useState<ProblemSet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalError, setModalError] = useState<string | undefined>();
 
-  useEffect(() => {
+  const fetchProblems = () => {
+    setIsLoading(true);
     loadInstructorProblems("au2229").then((loaded) => {
-      // Sort to guarantee consistent UI ordering based on title "1.1", "2.1", etc.
       const sorted = loaded.sort((a, b) => a.title.localeCompare(b.title));
       setProblemSets(sorted);
       setIsLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchProblems();
   }, []);
 
-  const handleCreateProblem = (data: any) => {
-    console.log("Creating new problem set:", data);
-    // TODO: Actually hook this up to the GitHub PAT API layer
-    setIsModalOpen(false);
+  const handleCreateProblem = async (data: any) => {
+    setIsSubmitting(true);
+    setModalError(undefined); // Clear any previous errors
+
+    const result = await createAndCommitProblem("au2229", data);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      setIsModalOpen(false);
+      fetchProblems(); // Refresh the grid to show the new YAML
+    } else {
+      setModalError(result.error || "An unknown error occurred while trying to push to GitHub.");
+    }
   };
 
   return (
@@ -90,8 +106,13 @@ export default function Instructor() {
       {/* Dynamic Overlay Modal */}
       <CreateProblemModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setModalError(undefined);
+        }}
         onSubmit={handleCreateProblem}
+        isSubmitting={isSubmitting}
+        errorMessage={modalError}
       />
     </div>
   );

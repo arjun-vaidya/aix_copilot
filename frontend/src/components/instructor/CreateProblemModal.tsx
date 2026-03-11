@@ -1,13 +1,15 @@
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 interface CreateProblemModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (data: any) => void;
+    isSubmitting?: boolean;
+    errorMessage?: string;
 }
 
-export default function CreateProblemModal({ isOpen, onClose, onSubmit }: CreateProblemModalProps) {
+export default function CreateProblemModal({ isOpen, onClose, onSubmit, isSubmitting = false, errorMessage }: CreateProblemModalProps) {
     const [formData, setFormData] = useState({
         title: "",
         topic: "",
@@ -46,6 +48,16 @@ export default function CreateProblemModal({ isOpen, onClose, onSubmit }: Create
                         <X className="w-5 h-5" />
                     </button>
                 </div>
+
+                {/* Error State */}
+                {errorMessage && (
+                    <div className="px-6 md:px-8 mb-4">
+                        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
+                            <span className="font-semibold block mb-0.5">Creation Failed:</span>
+                            {errorMessage}
+                        </div>
+                    </div>
+                )}
 
                 {/* Scrollable Form Body */}
                 <div className="px-6 md:px-8 pb-4 overflow-y-auto custom-scrollbar flex-1">
@@ -152,16 +164,24 @@ export default function CreateProblemModal({ isOpen, onClose, onSubmit }: Create
                 <div className="px-6 md:px-8 py-5 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50 rounded-b-2xl">
                     <button
                         onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                        disabled={isSubmitting}
+                        className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={() => onSubmit(formData)}
-                        className="flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                        disabled={isSubmitting}
+                        className="flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm min-w-[140px] justify-center cursor-pointer disabled:cursor-wait"
                     >
-                        Create & Edit
-                        <ArrowRight className="w-4 h-4 ml-0.5" />
+                        {isSubmitting ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <>
+                                Create & Edit
+                                <ArrowRight className="w-4 h-4 ml-0.5" />
+                            </>
+                        )}
                     </button>
                 </div>
 
