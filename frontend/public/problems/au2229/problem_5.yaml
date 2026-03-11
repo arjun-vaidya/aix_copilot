@@ -1,0 +1,25 @@
+id: "5"
+title: "5.1 Navier-Stokes Flow Simulation"
+topic: "Computational Fluid Dynamics"
+description: >
+  Solve the incompressible Navier-Stokes equations for driven cavity 
+  flow to observe the formation of primary and secondary vortices.
+difficulty: "Advanced"
+
+objective_placeholder: "e.g. Implement the SIMPLE or MAC method for pressure-velocity coupling..."
+constraint_placeholder: "e.g. Re = 100, Grid 32x32..."
+
+datasets: []
+
+initial_code: |
+  # AI4Numerics Editor
+  import numpy as np
+  
+  # Parameters
+  nx, ny = 32, 32
+  Re = 100.0
+  
+  # TODO: Initialize velocity and pressure fields
+  pass
+
+unit_test_path: null

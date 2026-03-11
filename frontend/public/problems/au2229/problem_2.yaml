@@ -1,0 +1,29 @@
+id: "2"
+title: "3.1 Damped Harmonic Oscillator"
+topic: "Differential Equations"
+description: >
+  Simulate a classical damped harmonic oscillator using scipy's odeint.
+  Model the position of a mass attached to a spring under the influence
+  of friction over time.
+difficulty: "Intermediate"
+
+objective_placeholder: "e.g. Simulate the motion of a spring over 10 seconds..."
+constraint_placeholder: "e.g. Total energy must be conserved within 1% error..."
+
+datasets: []
+
+initial_code: |
+  # AI4Numerics Editor
+
+  import numpy as np
+  from scipy.integrate import odeint
+  import matplotlib.pyplot as plt
+
+  # Parameters
+  m = 1.0  # mass
+  k = 10.0 # spring constant
+  c = 0.5  # damping coefficient
+
+  # TODO: Define the ODE system and simulate
+
+unit_test_path: "/unit_tests/problem_2.py"
