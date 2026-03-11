@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, FileText, Loader2 } from "lucide-react";
 import { loadInstructorProblems, type ProblemSet } from "../lib/problemLoader";
+import CreateProblemModal from "../components/instructor/CreateProblemModal";
 
 export default function Instructor() {
   const [problemSets, setProblemSets] = useState<ProblemSet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadInstructorProblems("au2229").then((loaded) => {
@@ -15,8 +17,14 @@ export default function Instructor() {
     });
   }, []);
 
+  const handleCreateProblem = (data: any) => {
+    console.log("Creating new problem set:", data);
+    // TODO: Actually hook this up to the GitHub PAT API layer
+    setIsModalOpen(false);
+  };
+
   return (
-    <div className="w-full h-full bg-[#f8f9fa] overflow-y-auto px-4 py-8 md:p-8 lg:p-10">
+    <div className="w-full h-full bg-[#f8f9fa] overflow-y-auto px-4 py-8 md:p-8 lg:p-10 relative">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -24,7 +32,10 @@ export default function Instructor() {
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Manage Problem Sets</h1>
             <p className="text-sm text-gray-500 mt-1">Create, edit, and monitor your assigned problem sets.</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm whitespace-nowrap">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm whitespace-nowrap"
+          >
             <Plus className="w-4 h-4" />
             New Problem Set
           </button>
@@ -75,6 +86,13 @@ export default function Instructor() {
           </div>
         )}
       </div>
+
+      {/* Dynamic Overlay Modal */}
+      <CreateProblemModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateProblem}
+      />
     </div>
   );
 }
