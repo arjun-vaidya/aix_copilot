@@ -12,6 +12,7 @@ import {
 
 const NAV_ITEMS = [
     { name: "Dashboard", path: "/dashboard", Icon: LayoutDashboard },
+    { name: "Instructor Dashboard", path: "/instructor", Icon: LayoutDashboard },
     { name: "My Courses", path: "/courses", Icon: BookOpen },
     { name: "Resources", path: "/resources", Icon: FolderOpen },
     { name: "Settings", path: "/settings", Icon: Settings },
