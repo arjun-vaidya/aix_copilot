@@ -51,7 +51,10 @@ export default async function handler(req: Request) {
             headers: { Authorization: `Bearer ${GITHUB_PAT}`, Accept: "application/vnd.github.v3+json" }
         });
 
-        if (!indexRes.ok) throw new Error("Failed to fetch the problem catalog from GitHub.");
+        if (!indexRes.ok) {
+            const errorText = await indexRes.text();
+            throw new Error(`Failed to fetch the problem catalog from GitHub: HTTP ${indexRes.status}. GitHub Response: ${errorText}`);
+        }
         const indexData = await indexRes.json();
         const currentFiles: string[] = JSON.parse(base64ToUtf8(indexData.content));
         const indexSha = indexData.sha;
