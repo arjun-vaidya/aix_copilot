@@ -2,25 +2,13 @@ import type { LLMProvider } from "./types";
 import type { ChatMessage } from "../aiService";
 
 export class GeminiProvider implements LLMProvider {
-    private apiKey: string;
-    private model = "gemini-2.5-flash";
-
-    constructor() {
-        // Read key from Vite env variables
-        this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-    }
-
     async streamChat(
         systemPrompt: string,
         chatHistory: ChatMessage[],
         onChunkReceived: (chunk: string) => void
     ): Promise<void> {
         try {
-            if (!this.apiKey || this.apiKey === "your_dummy_gemini_key_here") {
-                throw new Error("Missing or Dummy VITE_GEMINI_API_KEY. Please configure your key in frontend/.env.local");
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:streamGenerateContent?key=${this.apiKey}`;
+            const url = `/api/gemini-chat`;
 
             // Map standard history roles to Gemini format ("user" | "model")
             const contents = chatHistory.map(msg => ({
@@ -34,7 +22,6 @@ export class GeminiProvider implements LLMProvider {
                 },
                 contents
             };
-
 
             const response = await fetch(url, {
                 method: "POST",
