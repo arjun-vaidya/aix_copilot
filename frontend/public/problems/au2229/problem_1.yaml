@@ -1,5 +1,5 @@
 id: "1"
-title: "1.2 Linear Regression on House Prices"
+title: "Linear Regression on House Prices"
 topic: "Linear Algebra Basics"
 description: >
   In this problem, you will implement a simple Linear Regression model
@@ -31,13 +31,6 @@ initial_code: |
   import numpy as np
   import matplotlib.pyplot as plt
 
-  # 1. Load the dataset
-  df = pd.read_csv('house_data.csv')
-
-  # 2. Extract features and target
-  X = df['Square_Footage'].values
-  y = df['Price'].values
-
-  # TODO: Implement Linear Regression here...
+  print('Hello World!')
 
 unit_test_path: "/unit_tests/problem_1.py"

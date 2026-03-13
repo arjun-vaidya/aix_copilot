@@ -1,58 +1,54 @@
 import { useNavigate } from "react-router-dom";
-
-interface ProblemSet {
-    id: string;
-    name: string;
-    topic: string;
-    status: 'review' | 'continue' | 'start';
-    letter: string;
-}
-
-const PROBLEM_SETS: ProblemSet[] = [
-    {
-        id: "1",
-        name: "Problem Set 1: Linear Algebra",
-        topic: "Matrices & Vectors",
-        status: 'review',
-        letter: 'L',
-    },
-    {
-        id: "2",
-        name: "Problem Set 2: Root Finding",
-        topic: "Newton's Method",
-        status: 'continue',
-        letter: 'R',
-    },
-    {
-        id: "3",
-        name: "Problem Set 3: Interpolation",
-        topic: "Lagrange Polynomials",
-        status: 'start',
-        letter: 'I',
-    },
-    {
-        id: "4",
-        name: "Problem Set 4: Integration",
-        topic: "Simpson's Rule",
-        status: 'start',
-        letter: 'Q',
-    }
-];
+import { useEffect, useState } from "react";
+import { loadInstructorProblems } from "../../lib/problemLoader";
+import type { ProblemSet } from "../../lib/problemLoader";
 
 export default function ProblemTable() {
     const navigate = useNavigate();
+    const [problems, setProblems] = useState<ProblemSet[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchProblems() {
+            try {
+                const data = await loadInstructorProblems("au2229");
+                setProblems(data);
+            } catch (error) {
+                console.error("Failed to load problems:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchProblems();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="w-full bg-white border border-[#f1f1f1] rounded-2xl p-12 text-center shadow-sm">
+                <div className="inline-block animate-spin w-6 h-6 border-2 border-[#0267C1] border-t-transparent rounded-full mb-3" />
+                <p className="text-gray-400 text-sm font-medium">Loading problem sets...</p>
+            </div>
+        );
+    }
+
+    if (problems.length === 0) {
+        return (
+            <div className="w-full bg-white border border-[#f1f1f1] rounded-2xl p-12 text-center shadow-sm">
+                <p className="text-gray-400 text-sm font-medium">No problem sets available.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full bg-white border border-[#f1f1f1] rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
-
                     <tbody className="divide-y divide-[#f1f1f1]">
-                        {PROBLEM_SETS.map((set) => (
+                        {problems.map((set) => (
                             <tr key={set.id} className="hover:bg-gray-50/50 transition-colors">
                                 <td className="px-8 py-6">
                                     <span className="text-[15px] font-bold text-[#111827]">
-                                        {set.name}
+                                        {set.title}
                                     </span>
                                 </td>
                                 <td className="px-8 py-6">

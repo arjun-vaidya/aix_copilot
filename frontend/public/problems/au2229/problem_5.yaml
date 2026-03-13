@@ -1,5 +1,5 @@
 id: "5"
-title: "5.1 Navier-Stokes Flow Simulation"
+title: "Navier-Stokes Flow Simulation"
 topic: "Computational Fluid Dynamics"
 description: >
   Solve the incompressible Navier-Stokes equations for driven cavity 

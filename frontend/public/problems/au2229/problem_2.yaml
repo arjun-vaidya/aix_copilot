@@ -1,5 +1,5 @@
 id: "2"
-title: "3.1 Damped Harmonic Oscillator"
+title: "Damped Harmonic Oscillator"
 topic: "Differential Equations"
 description: >
   Simulate a classical damped harmonic oscillator using scipy's odeint.
