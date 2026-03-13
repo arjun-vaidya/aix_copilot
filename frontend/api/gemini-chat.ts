@@ -7,13 +7,17 @@ export default async function handler(req: Request) {
         return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     }
 
+    // DEBUG: See exactly what Vercel is loading
+    // @ts-ignore
+    console.log("ALL VERCEL ENV KEYS:", Object.keys(process.env));
+
     // Backend securely reads the token from Vercel's environment variables (no VITE_ prefix needed)
     // @ts-ignore (process.env is provided securely by the Vercel Node runtime)
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "your_dummy_gemini_key_here") {
+    if (!GEMINI_API_KEY) {
         return new Response(
-            JSON.stringify({ error: "Missing or Dummy GEMINI_API_KEY. Please configure your key in Vercel settings." }),
+            JSON.stringify({ error: "API Key is completely undefined in this Edge environment." }),
             { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
     }
