@@ -7,9 +7,7 @@ export default async function handler(req: Request) {
         return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
     }
 
-    // DEBUG: See exactly what Vercel is loading
-    // @ts-ignore
-    console.log("ALL VERCEL ENV KEYS:", Object.keys(process.env));
+
 
     // Backend securely reads the token from Vercel's environment variables (no VITE_ prefix needed)
     // @ts-ignore (process.env is provided securely by the Vercel Node runtime)
@@ -24,21 +22,32 @@ export default async function handler(req: Request) {
 
     try {
         const body = await req.json();
-        const model = "gemini-2.5-flash";
+
+
+        const model = "gemini-3.1-flash-lite-preview";
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${GEMINI_API_KEY}`;
+
+        // Gemini REST API expects 'system_instruction' (snake_case)
+        const geminiBody = {
+            system_instruction: body.systemInstruction || body.system_instruction,
+            contents: body.contents
+        };
 
         // Pass the request transparently to Google's streaming API
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
+            body: JSON.stringify(geminiBody)
         });
 
         if (!response.ok) {
-            const errData = await response.json();
-            return new Response(JSON.stringify({
-                error: errData?.error?.message || `HTTP ${response.status} Error from Gemini API`
-            }), {
+            const errData = await response.json().catch(() => ({}));
+
+            const errorMessage = errData?.error?.message ||
+                (errData?.[0]?.error?.message) ||
+                `HTTP ${response.status} Error from Gemini API`;
+
+            return new Response(JSON.stringify({ error: errorMessage }), {
                 status: response.status,
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -53,7 +62,6 @@ export default async function handler(req: Request) {
             }
         });
     } catch (error: any) {
-        console.error("Gemini Edge API Error:", error);
         return new Response(JSON.stringify({ error: error.message || "Failed to communicate with LLM provider." }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
