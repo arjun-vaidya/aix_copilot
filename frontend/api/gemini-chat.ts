@@ -30,6 +30,16 @@ export default async function handler(req: Request) {
             body: JSON.stringify(body)
         });
 
+        if (!response.ok) {
+            const errData = await response.json();
+            return new Response(JSON.stringify({
+                error: errData?.error?.message || `HTTP ${response.status} Error from Gemini API`
+            }), {
+                status: response.status,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         // Pass the streaming response directly back to the client
         return new Response(response.body, {
             status: response.status,
