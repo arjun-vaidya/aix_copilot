@@ -35,15 +35,23 @@ export class GeminiProvider implements LLMProvider {
                 let friendlyMsg = `API returned status ${response.status}.`;
                 try {
                     const errJson = JSON.parse(errText);
-                    const apiMsg = errJson?.error?.message || errJson?.[0]?.error?.message;
-                    if (apiMsg) {
-                        // Extract just the first sentence before technical details
-                        friendlyMsg = apiMsg.split('\n')[0];
+
+                    // If the error comes directly from our Vercel Edge function
+                    if (errJson.error && typeof errJson.error === 'string') {
+                        friendlyMsg = errJson.error;
                     }
+                    // Otherwise try to extract from Google's deep JSON schema
+                    else {
+                        const apiMsg = errJson?.error?.message || errJson?.[0]?.error?.message;
+                        if (apiMsg) {
+                            friendlyMsg = apiMsg.split('\n')[0];
+                        }
+                    }
+
                     if (response.status === 429) {
                         friendlyMsg = "Rate limit exceeded. Please wait a moment before sending another message.";
                     } else if (response.status === 403) {
-                        friendlyMsg = "Invalid API key. Please check your VITE_GEMINI_API_KEY in frontend/.env.local";
+                        friendlyMsg = errJson.error || "Invalid API key. Please check the GEMINI_API_KEY environment variable in Vercel.";
                     } else if (response.status === 400) {
                         friendlyMsg = "Bad request. The prompt may be too long or contain invalid content.";
                     }
