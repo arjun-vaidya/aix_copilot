@@ -1,53 +1,50 @@
-import StudentMetrics from "../components/dashboard/StudentMetrics";
-import MyCourses from "../components/dashboard/MyCourses";
-import ProblemSetList from "../components/dashboard/ProblemSetList";
-import Header from "../components/dashboard/Header";
-import PerformancePanel from "../components/dashboard/PerformancePanel";
+import ProblemTable from "../components/dashboard/ProblemTable";
+import ResourceCard from "../components/dashboard/ResourceCard";
+import { BrainCircuit, Cpu, ShieldCheck } from "lucide-react";
 
 export default function Dashboard() {
   return (
-    <div className="w-full h-full flex flex-col">
-      <Header />
+    <div className="w-full h-full bg-[#fcfcfc] overflow-y-auto">
+      <main className="max-w-[1200px] mx-auto px-8 md:px-12 py-12 flex flex-col gap-8">
+        {/* Header Section */}
+        <header className="flex flex-col">
+          <h1 className="text-4xl font-black text-[#111827] tracking-tight">
+            Dashboard Overview
+          </h1>
+        </header>
 
-      {/* Scrollable Main Content */}
-      <main className="w-full px-6 md:px-10 py-8 md:py-12 flex flex-col gap-10">
-        {/* Welcome Section */}
-        <div className="flex flex-col gap-1.5">
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            Welcome back, Alex
-          </h2>
-          <div className="flex items-center text-sm">
-            <span className="text-gray-500">Currently viewing:</span>
-            <span className="font-bold text-gray-900 ml-2">
-              Numerical Methods 101
-            </span>
-          </div>
-        </div>
+        {/* Separator */}
+        <div className="h-[1px] w-full bg-[#f1f1f1] -mt-2" />
 
-        <StudentMetrics />
+        {/* Problem Sets Section */}
+        <section className="flex flex-col gap-6 -mt-2">
+          <h3 className="text-lg font-extrabold text-[#111827]">
+            Available Problem Sets
+          </h3>
+          <ProblemTable />
+        </section>
 
-        <MyCourses />
-
-        <div className="flex flex-col xl:flex-row gap-10">
-          {/* Main Left Column (Sets) */}
-          <div className="flex-1 flex flex-col gap-8">
-            <div className="flex items-end justify-between">
-              <h3 className="text-xl font-bold text-gray-900">
-                Active Problem Sets
-              </h3>
-              <a
-                href="#"
-                className="text-sm font-bold text-blue-500 hover:text-blue-600 transition-colors"
-              >
-                View All Sets
-              </a>
-            </div>
-
-            <ProblemSetList />
-          </div>
-
-          <PerformancePanel />
-        </div>
+        {/* Resource Cards Section */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
+          <ResourceCard
+            title="Why Reasoning Matters"
+            description="Understanding the 'why' behind numerical methods ensures long-term retention beyond simple formula application."
+            linkText="Read Article"
+            Icon={BrainCircuit}
+          />
+          <ResourceCard
+            title="Debugging as a Learning Tool"
+            description="How analyzing convergence failures provides deeper insights into algorithm stability and precision limits."
+            linkText="Read Article"
+            Icon={Cpu}
+          />
+          <ResourceCard
+            title="Mastering the Gatekeeper Phase"
+            description="Strategies for overcoming the initial steep learning curve of advanced numerical analysis concepts."
+            linkText="Read Article"
+            Icon={ShieldCheck}
+          />
+        </section>
       </main>
     </div>
   );
