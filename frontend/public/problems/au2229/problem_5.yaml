@@ -8,6 +8,7 @@ difficulty: "Advanced"
 
 objective_placeholder: "e.g. Implement the SIMPLE or MAC method for pressure-velocity coupling..."
 constraint_placeholder: "e.g. Re = 100, Grid 32x32..."
+approach_placeholder: "e.g. I will discretize the domain on a staggered grid, use finite differences for the Laplacian, and iterate with pressure correction until convergence..."
 
 datasets: []
 

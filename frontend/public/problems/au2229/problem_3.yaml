@@ -12,6 +12,7 @@ difficulty: "Intermediate"
 
 objective_placeholder: "e.g. Estimate the sensitivity dX/dT of a CSTR conversion using numerical differentiation..."
 constraint_placeholder: "e.g. k₀ = 1.0e6 s⁻¹, Eₐ = 80000 J/mol, R = 8.314 J/(mol·K), τ = 2.0 s, T₀ = 300–500 K..."
+approach_placeholder: "e.g. I will implement the Arrhenius equation for k(T), compute X(T), then apply the central-difference formula (f(T+h) - f(T-h)) / 2h..."
 
 datasets:
   - description: "No external dataset is required. The model parameters are provided in the problem statement."

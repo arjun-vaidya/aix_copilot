@@ -9,6 +9,7 @@ difficulty: "Beginner"
 
 objective_placeholder: "e.g. Find the line of best fit for the housing dataset..."
 constraint_placeholder: "e.g. The Mean Squared Error (MSE) must be less than 500..."
+approach_placeholder: "e.g. I will construct the design matrix X, compute X^T X and X^T y, then solve for β using numpy's linalg.solve..."
 
 datasets:
   - description: "Below is a preview of house_data.csv containing 500 records of local real estate."

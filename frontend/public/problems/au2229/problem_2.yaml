@@ -9,6 +9,7 @@ difficulty: "Intermediate"
 
 objective_placeholder: "e.g. Simulate the motion of a spring over 10 seconds..."
 constraint_placeholder: "e.g. Total energy must be conserved within 1% error..."
+approach_placeholder: "e.g. I will define the second-order ODE as a system of first-order ODEs and use scipy's odeint to solve numerically..."
 
 datasets: []
 

@@ -25,7 +25,7 @@ export default async function handler(req: Request) {
 
 
         const model = "gemini-3.1-flash-lite-preview";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${GEMINI_API_KEY}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${GEMINI_API_KEY}&alt=sse`;
 
         // Gemini REST API expects 'system_instruction' (snake_case)
         const geminiBody = {
@@ -57,8 +57,9 @@ export default async function handler(req: Request) {
         return new Response(response.body, {
             status: response.status,
             headers: {
-                'Content-Type': response.headers.get('Content-Type') || 'application/json',
-                'Transfer-Encoding': 'chunked'
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive'
             }
         });
     } catch (error: any) {

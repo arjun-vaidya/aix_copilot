@@ -10,6 +10,8 @@ export default function GatekeeperPanel({
     setObjective,
     constraints,
     setConstraints,
+    approach,
+    setApproach,
 }: {
     problem: ProblemSet;
     state: WorkspaceState;
@@ -18,10 +20,12 @@ export default function GatekeeperPanel({
     setObjective: (val: string) => void;
     constraints: string;
     setConstraints: (val: string) => void;
+    approach: string;
+    setApproach: (val: string) => void;
 }) {
 
     const isUnlocked = state !== "GATEKEEPER" && state !== "LOCKED";
-    const isValid = objective.trim().length > 5 && constraints.trim().length > 5;
+    const isValid = objective.trim().length > 5 && constraints.trim().length > 5 && approach.trim().length > 5;
 
     return (
         <div className="flex-1 flex flex-col overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -58,11 +62,10 @@ export default function GatekeeperPanel({
                 <div className="flex flex-col gap-2">
                     <label className="text-xs font-bold text-slate-700">1. Define Objective</label>
                     <textarea
-                        disabled={isUnlocked}
                         placeholder={problem.objectivePlaceholder}
                         value={objective}
                         onChange={(e) => setObjective(e.target.value)}
-                        className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none disabled:opacity-75 disabled:bg-slate-100"
+                        className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
                     />
                 </div>
 
@@ -70,11 +73,21 @@ export default function GatekeeperPanel({
                 <div className="flex flex-col gap-2">
                     <label className="text-xs font-bold text-slate-700">2. Define Constraints</label>
                     <textarea
-                        disabled={isUnlocked}
                         placeholder={problem.constraintPlaceholder}
                         value={constraints}
                         onChange={(e) => setConstraints(e.target.value)}
-                        className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none disabled:opacity-75 disabled:bg-slate-100"
+                        className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                    />
+                </div>
+
+                {/* Approach */}
+                <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-slate-700">3. Define Approach</label>
+                    <textarea
+                        placeholder={problem.approachPlaceholder}
+                        value={approach}
+                        onChange={(e) => setApproach(e.target.value)}
+                        className="w-full h-24 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
                     />
                 </div>
 

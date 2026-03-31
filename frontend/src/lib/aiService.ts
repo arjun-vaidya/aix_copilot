@@ -11,6 +11,7 @@ export type CoPilotContext = {
     problem: ProblemSet;
     objective: string;
     constraints: string;
+    approach: string;
     code: string;
     logs: LogEntry[];
     audits: { category: string; rationale: string; }[];
@@ -35,6 +36,9 @@ ${workspaceContext.objective}
 --- STUDENT'S STRICT CONSTRAINTS:
 ${workspaceContext.constraints}
 
+--- STUDENT'S APPROACH/STRATEGY:
+${workspaceContext.approach}
+
 --- STUDENT'S CURRENT CODE:
 \`\`\`python
 ${workspaceContext.code}
@@ -56,6 +60,47 @@ Keep responses brief, encouraging, and highly academic.`;
 
     console.log("[GEMINI via FACTORY] Simulating API request with system prompt length:", systemPrompt.length);
     console.log("Chat history size:", chatHistory.length);
+
+    await provider.streamChat(systemPrompt, chatHistory, onChunkReceived);
+}
+
+export async function generateCodeFromApproach(
+    workspaceContext: CoPilotContext,
+    onChunkReceived: (chunk: string) => void
+): Promise<void> {
+
+    const systemPrompt = `You are an expert Python programmer and numerical methods specialist.
+Generate a complete, working Python script that solves the following problem based on the student's objective, constraints, and approach.
+
+--- PROBLEM: ${workspaceContext.problem.title}
+${workspaceContext.problem.description}
+
+--- STUDENT'S DECLARED OBJECTIVE:
+${workspaceContext.objective}
+
+--- STUDENT'S STRICT CONSTRAINTS:
+${workspaceContext.constraints}
+
+--- STUDENT'S APPROACH/STRATEGY:
+${workspaceContext.approach}
+
+--- STUDENT'S CURRENT CODE (for reference):
+\`\`\`python
+${workspaceContext.code}
+\`\`\`
+
+INSTRUCTIONS:
+- Output ONLY the Python code, no explanations or markdown formatting.
+- Use numpy, pandas, and matplotlib as needed.
+- Include inline comments explaining key steps.
+- The code should be directly executable in a Pyodide environment.
+- Follow the student's stated approach as closely as possible.`;
+
+    const provider = LLMFactory.getProvider("gemini");
+
+    const chatHistory: ChatMessage[] = [
+        { role: "user", content: "Generate the Python code based on my approach." }
+    ];
 
     await provider.streamChat(systemPrompt, chatHistory, onChunkReceived);
 }

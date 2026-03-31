@@ -1,4 +1,4 @@
-import { Play, Code2, Lock } from "lucide-react";
+import { Play, Code2, Lock, Sparkles } from "lucide-react";
 import MonacoEditor from "@monaco-editor/react";
 import type { ProblemSet } from "../../lib/problemLoader";
 import type { WorkspaceState } from "../../pages/Workspace";
@@ -11,7 +11,9 @@ export default function Editor({
     onRun,
     onRunTests,
     code,
-    setCode
+    setCode,
+    onGenerateCode,
+    isGeneratingCode
 }: {
     problem: ProblemSet;
     state: WorkspaceState;
@@ -21,6 +23,8 @@ export default function Editor({
     onRunTests?: () => void;
     code: string;
     setCode: (val: string) => void;
+    onGenerateCode?: () => void;
+    isGeneratingCode?: boolean;
 }) {
     const isLocked = state === "GATEKEEPER" || state === "LOCKED" || (state === "EVALUATION" && evaluationResult === "fail" && executionMode === "test");
 
@@ -41,6 +45,16 @@ export default function Editor({
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {onGenerateCode && (
+                        <button
+                            onClick={() => !isLocked && state !== "EXECUTION" && onGenerateCode()}
+                            disabled={isLocked || state === "EXECUTION" || isGeneratingCode}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-200 disabled:bg-slate-50 disabled:border-slate-100 disabled:text-slate-400 text-slate-900 rounded-md text-xs font-bold transition-all shadow-sm"
+                        >
+                            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                            {isGeneratingCode ? "Generating..." : "Generate Code"}
+                        </button>
+                    )}
                     {problem.unitTestPath && (
                         <button
                             onClick={() => !isLocked && state !== "EXECUTION" && onRunTests?.()}

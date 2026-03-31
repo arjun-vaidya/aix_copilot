@@ -64,25 +64,33 @@ export class GeminiProvider implements LLMProvider {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
-            // Gemini streaming returns SSE-like JSON chunks wrapped in arrays
+            // Gemini streaming returns SSE format when &alt=sse is in the URL
+            let buffer = "";
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
 
-                const chunkText = decoder.decode(value, { stream: true });
+                buffer += decoder.decode(value, { stream: true });
 
-                // Extremely simple parser for Gemini stream frames
-                // Real production logic might need to split by line boundaries for robustness
-                try {
-                    // Properly match JSON string values taking escape characters into account
-                    const matches = chunkText.matchAll(/"text":\s*"((?:[^"\\]|\\.)*)"/g);
-                    for (const match of Array.from(matches)) {
-                        // Use native JSON.parse to perfectly unescape the matched JSON string segment
-                        const rawContent = JSON.parse('"' + match[1] + '"');
-                        onChunkReceived(rawContent);
+                const lines = buffer.split('\n');
+                // keep the last line in buffer in case it's incomplete
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6).trim();
+                        if (!dataStr) continue;
+
+                        try {
+                            const chunkJson = JSON.parse(dataStr);
+                            const text = chunkJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (text) {
+                                onChunkReceived(text);
+                            }
+                        } catch (e) {
+                            console.error("Error parsing Gemini SSE chunk:", e);
+                        }
                     }
-                } catch (e) {
-                    console.error("Error parsing Gemini chunk:", e);
                 }
             }
         } catch (error: any) {

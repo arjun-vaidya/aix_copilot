@@ -8,6 +8,7 @@ difficulty: "Advanced"
 
 objective_placeholder: "e.g. Calculate the heat loss per unit length of the pipe..."
 constraint_placeholder: "e.g. Inner temperature = 400 K, outer = 300 K..."
+approach_placeholder: "e.g. I will apply Fourier's law in cylindrical coordinates and solve the radial heat equation analytically for each insulation layer..."
 
 datasets: []
 

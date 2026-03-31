@@ -7,7 +7,7 @@ import Editor from "../components/workspace/Editor";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
-import { type ChatMessage } from "../lib/aiService";
+import { type ChatMessage, generateCodeFromApproach } from "../lib/aiService";
 import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
@@ -57,6 +57,8 @@ export default function Workspace() {
   // Gatekeeper input states
   const [objective, setObjective] = useState("");
   const [constraints, setConstraints] = useState("");
+  const [approach, setApproach] = useState("");
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
   // Editor Code State
   const [editorCode, setEditorCode] = useState<string>("");
@@ -140,6 +142,34 @@ export default function Workspace() {
     if (isMobile) setActiveTab("editor");
   }
 
+  const handleGenerateCode = async () => {
+    if (!problem || isGeneratingCode) return;
+    setIsGeneratingCode(true);
+    setLogs(l => [...l, { type: "system", text: "\n> Generating code from your approach..." }]);
+
+    try {
+      await generateCodeFromApproach(
+        {
+          problem,
+          objective,
+          constraints,
+          approach,
+          code: editorCode,
+          logs,
+          audits,
+        },
+        (chunk: string) => {
+          setLogs(l => [...l, { type: "stdout", text: chunk }]);
+        }
+      );
+      setLogs(l => [...l, { type: "success", text: "\n[Code Generation Complete]" }]);
+    } catch (err: any) {
+      setLogs(l => [...l, { type: "error", text: `\n[Generation Error] ${err.message}` }]);
+    } finally {
+      setIsGeneratingCode(false);
+    }
+  }
+
   if (isLoading) {
     return <div className="h-full w-full flex items-center justify-center text-slate-400 text-sm font-medium">Loading problem...</div>;
   }
@@ -204,6 +234,8 @@ export default function Workspace() {
               setObjective={setObjective}
               constraints={constraints}
               setConstraints={setConstraints}
+              approach={approach}
+              setApproach={setApproach}
             />
           </Panel>
 
@@ -224,6 +256,8 @@ export default function Workspace() {
                   onRunTests={handleRunTests}
                   code={editorCode}
                   setCode={setEditorCode}
+                  onGenerateCode={handleGenerateCode}
+                  isGeneratingCode={isGeneratingCode}
                 />
               </Panel>
               <PanelResizeHandle className="h-1.5 bg-slate-100 border-y border-slate-200 hover:bg-blue-200 transition-colors cursor-row-resize flex justify-center items-center z-10">
@@ -255,6 +289,7 @@ export default function Workspace() {
                     problem={problem}
                     objective={objective}
                     constraints={constraints}
+                    approach={approach}
                     code={editorCode}
                     logs={logs}
                     audits={audits}
@@ -280,6 +315,8 @@ export default function Workspace() {
               setObjective={setObjective}
               constraints={constraints}
               setConstraints={setConstraints}
+              approach={approach}
+              setApproach={setApproach}
             />}
             {activeTab === "editor" && (
               <div className="flex-1 flex flex-col overflow-hidden">
@@ -292,6 +329,8 @@ export default function Workspace() {
                     onRun={handleRunSimulation}
                     code={editorCode}
                     setCode={setEditorCode}
+                    onGenerateCode={handleGenerateCode}
+                    isGeneratingCode={isGeneratingCode}
                   />
                 </div>
                 <div className="h-2/5 flex flex-col bg-[#0d1117] relative">
@@ -311,6 +350,7 @@ export default function Workspace() {
                   problem={problem}
                   objective={objective}
                   constraints={constraints}
+                  approach={approach}
                   code={editorCode}
                   logs={logs}
                   audits={audits}

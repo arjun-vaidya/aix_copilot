@@ -14,6 +14,7 @@ export default function CoPilotChat({
     problem,
     objective,
     constraints,
+    approach,
     code,
     logs,
     audits,
@@ -24,6 +25,7 @@ export default function CoPilotChat({
     problem: ProblemSet;
     objective: string;
     constraints: string;
+    approach: string;
     code: string;
     logs: LogEntry[];
     audits: AuditRecord[];
@@ -57,7 +59,7 @@ export default function CoPilotChat({
         // Add a temporary empty assistant message for streaming
         setMessages(prev => [...prev, { role: "assistant", content: "" }]);
 
-        const context = { problem, objective, constraints, code, logs, audits };
+        const context = { problem, objective, constraints, approach, code, logs, audits };
 
         await simulateStreamingCoPilot(currentHistory, context, (chunk) => {
             setMessages(prev => {

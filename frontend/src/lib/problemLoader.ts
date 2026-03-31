@@ -8,6 +8,7 @@ export type ProblemSet = {
     difficulty: "Beginner" | "Intermediate" | "Advanced";
     objectivePlaceholder: string;
     constraintPlaceholder: string;
+    approachPlaceholder: string;
     dataset: {
         description: string;
         fields: { name: string; type: string; desc: string }[];
@@ -26,6 +27,7 @@ interface RawYamlProblem {
     difficulty: "Beginner" | "Intermediate" | "Advanced";
     objective_placeholder: string;
     constraint_placeholder: string;
+    approach_placeholder?: string;
     datasets: {
         description: string;
         fields: { name: string; type: string; desc: string }[];
@@ -64,6 +66,7 @@ export async function loadProblemById(problemId: string, instructorId = "au2229"
             difficulty: parsed.difficulty,
             objectivePlaceholder: parsed.objective_placeholder,
             constraintPlaceholder: parsed.constraint_placeholder,
+            approachPlaceholder: parsed.approach_placeholder ?? "e.g. Describe your strategy for solving this problem...",
             dataset: parsed.datasets ?? [],
             initialCode: parsed.initial_code,
             unitTestPath: parsed.unit_test_path ?? undefined,
