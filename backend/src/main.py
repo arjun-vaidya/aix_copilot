@@ -9,10 +9,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for local Next.js/Vite development and production
+# Configure CORS for local development and production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://localhost:3000"],
+    allow_origins=["*"], # Allow all origins for the prototype
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
