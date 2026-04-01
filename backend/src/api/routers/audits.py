@@ -17,7 +17,7 @@ CATEGORY_MAP = {
 class AuditPayload(BaseModel):
     iteration_id: str
     category: str
-    student_rationale: str
+    rationale: str
 
 @router.post("/")
 def save_audit(payload: AuditPayload, user_id: str = Depends(get_current_user_id)):
@@ -33,9 +33,11 @@ def save_audit(payload: AuditPayload, user_id: str = Depends(get_current_user_id
         data = {
             "iteration_id": payload.iteration_id,
             "category": db_category,
-            "student_rationale": payload.student_rationale,
+            "student_rationale": payload.rationale,
         }
         result = supabase.table("manual_audits").insert(data).execute()
+        print(f"DEBUG: Audit Insert Result: {result.data}")
         return {"status": "success", "data": result.data}
     except Exception as e:
+        print(f"ERROR: Audit Insert Failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

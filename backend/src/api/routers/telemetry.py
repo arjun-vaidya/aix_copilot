@@ -50,6 +50,7 @@ def save_telemetry(payload: IterationPayload, user_id: str = Depends(get_current
         }
         
         result = supabase.table("iterations").insert(data).execute()
+        print(f"DEBUG: Telemetry Insert Result: {result.data}")
         
         return {"status": "success", "data": result.data}
     except Exception as e:
