@@ -91,9 +91,10 @@ export default function Workspace() {
 
   const postTelemetry = async (status: "PASS" | "FAIL", output?: string, errorStr?: string): Promise<string | null> => {
     if (!session?.access_token || !problem) return null;
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     try {
       iterationCountRef.current += 1;
-      const res = await fetch("http://localhost:8000/api/telemetry/", {
+      const res = await fetch(`${apiBase}/api/telemetry/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -178,8 +179,9 @@ export default function Workspace() {
 
       // Persist audit to Supabase
       if (lastFailedIterationIdRef.current && session?.access_token) {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
         try {
-          await fetch("http://localhost:8000/api/audits/", {
+          await fetch(`${apiBase}/api/audits/`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
