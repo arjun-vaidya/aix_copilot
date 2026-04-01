@@ -8,6 +8,7 @@ import OutputConsole, { type LogEntry } from "../components/workspace/OutputCons
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
 import { type ChatMessage, generateCodeFromApproach } from "../lib/aiService";
+import { useAuth } from "../contexts/AuthContext";
 import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
@@ -42,6 +43,8 @@ export default function Workspace() {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState>("GATEKEEPER");
   const [evaluationResult, setEvaluationResult] = useState<"pass" | "fail" | null>(null);
   const [audits, setAudits] = useState<AuditRecord[]>([]);
+  const { session } = useAuth();
+  const iterationCountRef = useRef(0);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Hello! I'm here to help you reason through your numerical simulation. How can we start forming the solution according to your constraints?" }
@@ -85,6 +88,34 @@ export default function Workspace() {
     }
   };
 
+  const postTelemetry = async (status: "PASS" | "FAIL", output?: string, errorStr?: string) => {
+    if (!session?.access_token || !problem) return;
+    try {
+      iterationCountRef.current += 1;
+      await fetch("http://localhost:8000/api/telemetry/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          problem_id: problem.id,
+          iteration_number: iterationCountRef.current,
+          code_snapshot: editorCode,
+          objective_text: objective,
+          constraint_text: constraints,
+          approach_text: approach,
+          execution_mode: executionModeRef.current || "simulation",
+          execution_status: status,
+          stdout: output || "",
+          stderr: errorStr || ""
+        })
+      });
+    } catch (e) {
+      console.error("Telemetry sync failed", e);
+    }
+  };
+
   const getWorker = () => {
     if (!workerRef.current) {
       workerRef.current = new Worker(new URL('../lib/pyodideWorker.ts', import.meta.url));
@@ -96,6 +127,7 @@ export default function Workspace() {
           setLogs(l => [...l, { type: "success", text: `\n[Simulation Completed] Return Output: ${data.result}` }]);
           setEvaluationResult("pass");
           setWorkspaceState("EVALUATION");
+          postTelemetry("PASS", data.result, undefined);
         } else if (data.type === 'error') {
           setLogs(l => [...l, { type: "error", text: `\n[Exception] ${data.error}` }]);
 
@@ -107,6 +139,7 @@ export default function Workspace() {
             // Basic simulation runs don't lock the editor on failure
             setWorkspaceState("UNLOCKED");
           }
+          postTelemetry("FAIL", undefined, data.error);
         }
       }
     }

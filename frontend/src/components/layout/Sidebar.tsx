@@ -8,6 +8,7 @@ import {
     X,
     User,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const NAV_ITEMS = [
     { name: "Dashboard", path: "/dashboard", Icon: LayoutDashboard },
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
+    const { user } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const location = useLocation();
@@ -84,7 +86,12 @@ export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
                 className={`${isMobileMenuOpen ? "flex" : "hidden"} md:flex flex-col flex-1 w-full absolute md:static top-[90px] bg-white border-b md:border-b-0 border-[#f1f1f1] shadow-lg md:shadow-none`}
             >
                 <nav className={`flex-1 py-4 md:py-2 space-y-1 px-4 ${isCollapsed ? 'md:px-3' : 'md:px-4'}`}>
-                    {NAV_ITEMS.map(({ name, path, Icon }) => (
+                    {NAV_ITEMS.filter(item => {
+                        if (item.name === "Instructor Dashboard") {
+                            return user?.user_metadata?.role === "instructor";
+                        }
+                        return true;
+                    }).map(({ name, path, Icon }) => (
                         <NavLink
                             key={name}
                             to={path}
@@ -110,8 +117,12 @@ export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
                             <User className="w-5 h-5 text-[#0267C1]" />
                         </div>
                         <div className={`flex flex-col min-w-0 ${isCollapsed ? 'md:hidden' : ''}`}>
-                            <span className="text-sm font-bold text-gray-900 truncate">Alex Johnson</span>
-                            <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">ID: 294021</span>
+                            <span className="text-sm font-bold text-gray-900 truncate">
+                                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || "User"}
+                            </span>
+                            <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                                ID: {user?.id?.slice(0, 6).toUpperCase() || "N/A"}
+                            </span>
                         </div>
                         {!isCollapsed && (
                             <button

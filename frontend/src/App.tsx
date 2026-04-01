@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -10,23 +9,23 @@ import Dashboard from "./pages/Dashboard";
 import Instructor from "./pages/Instructor";
 import Workspace from "./pages/Workspace";
 import Login from "./pages/Login";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function AppContent() {
+  const { session, isLoading, signOut } = useAuth();
+  const isAuthenticated = !!session;
 
-  const handleLogin = (role: string) => {
-    // eslint-disable-next-line no-console
-    console.log(`Logging in as: ${role}`); // Will be useful later for branching
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#f8f9fa] font-bold text-slate-500">
+        Authenticating...
+      </div>
+    );
+  }
 
   // If not authenticated, force the Login screen
   if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
+    return <Login />;
   }
 
   // Once authenticated, render the main application layout
@@ -34,7 +33,7 @@ function App() {
     <Router>
       <div className="flex flex-col md:flex-row h-[100dvh] w-full bg-[#f8f9fa] overflow-hidden">
         {/* Persistent Global Sidebar */}
-        <Sidebar onLogout={handleLogout} />
+        <Sidebar onLogout={signOut} />
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto">
@@ -50,4 +49,10 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
