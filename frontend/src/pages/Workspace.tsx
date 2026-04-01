@@ -45,6 +45,7 @@ export default function Workspace() {
   const [audits, setAudits] = useState<AuditRecord[]>([]);
   const { session } = useAuth();
   const iterationCountRef = useRef(0);
+  const lastFailedIterationIdRef = useRef<string | null>(null);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Hello! I'm here to help you reason through your numerical simulation. How can we start forming the solution according to your constraints?" }
@@ -88,11 +89,11 @@ export default function Workspace() {
     }
   };
 
-  const postTelemetry = async (status: "PASS" | "FAIL", output?: string, errorStr?: string) => {
-    if (!session?.access_token || !problem) return;
+  const postTelemetry = async (status: "PASS" | "FAIL", output?: string, errorStr?: string): Promise<string | null> => {
+    if (!session?.access_token || !problem) return null;
     try {
       iterationCountRef.current += 1;
-      await fetch("http://localhost:8000/api/telemetry/", {
+      const res = await fetch("http://localhost:8000/api/telemetry/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -111,8 +112,12 @@ export default function Workspace() {
           stderr: errorStr || ""
         })
       });
+      const json = await res.json();
+      // Return the created iteration's DB id for linking audits
+      return json?.data?.[0]?.id || null;
     } catch (e) {
       console.error("Telemetry sync failed", e);
+      return null;
     }
   };
 
@@ -139,7 +144,9 @@ export default function Workspace() {
             // Basic simulation runs don't lock the editor on failure
             setWorkspaceState("UNLOCKED");
           }
-          postTelemetry("FAIL", undefined, data.error);
+          postTelemetry("FAIL", undefined, data.error).then(iterationId => {
+            lastFailedIterationIdRef.current = iterationId;
+          });
         }
       }
     }
@@ -165,13 +172,33 @@ export default function Workspace() {
     worker.postMessage({ code: editorCode, id: Date.now(), testPath: problem.unitTestPath });
   }
 
-  const handleAuditSubmit = (category: string | null, rationale: string) => {
-    // [TODO] In a real app, we would POST this telemetry to the backend here
+  const handleAuditSubmit = async (category: string | null, rationale: string) => {
     if (category) {
       setAudits(prev => [...prev, { category, rationale }]);
+
+      // Persist audit to Supabase
+      if (lastFailedIterationIdRef.current && session?.access_token) {
+        try {
+          await fetch("http://localhost:8000/api/audits/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+              iteration_id: lastFailedIterationIdRef.current,
+              category,
+              student_rationale: rationale
+            })
+          });
+        } catch (e) {
+          console.error("Audit sync failed", e);
+        }
+      }
     }
     setEvaluationResult(null);
     setWorkspaceState("UNLOCKED");
+    lastFailedIterationIdRef.current = null;
     if (isMobile) setActiveTab("editor");
   }
 

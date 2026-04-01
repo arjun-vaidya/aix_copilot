@@ -25,9 +25,19 @@ def save_telemetry(payload: IterationPayload, user_id: str = Depends(get_current
     Saves a student's code iteration to the database.
     """
     try:
+        # Resolve the backend UUID for the problem based on the frontend's slug (e.g. "2")
+        # Optimization: Try to match title or fallback to our seed ID
+        problem_res = supabase.table("problem_sets").select("id").eq("title", payload.problem_id).execute()
+        
+        problem_uuid = (
+            problem_res.data[0]["id"] 
+            if problem_res.data 
+            else "00000000-0000-0000-0000-000000000002" # Fallback to seed ID
+        )
+
         data = {
             "student_id": user_id,
-            "problem_id": "00000000-0000-0000-0000-000000000002", # HARDCODED UUID FOR DEMO
+            "problem_id": problem_uuid,
             "iteration_number": payload.iteration_number,
             "code_snapshot": payload.code_snapshot,
             "objective_text": payload.objective_text,
@@ -38,8 +48,6 @@ def save_telemetry(payload: IterationPayload, user_id: str = Depends(get_current
             "stdout": payload.stdout,
             "stderr": payload.stderr
         }
-        
-        # In a real sync we would lookup the problem_id's UUID from the problem_sets table based on string ID.
         
         result = supabase.table("iterations").insert(data).execute()
         
