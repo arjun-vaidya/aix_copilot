@@ -22,7 +22,7 @@ async function loadEngine() {
 }
 
 self.onmessage = async (event: MessageEvent) => {
-    const { code, id, testPath } = event.data;
+    const { code, id, testPath, inlineTestCode } = event.data;
 
     if (!pyodide) {
         self.postMessage({ type: "system", text: "Initializing Python Engine (Pyodide v0.25)..." });
@@ -43,6 +43,13 @@ self.onmessage = async (event: MessageEvent) => {
             const testCode = await response.text();
             executionCode = code + "\n\n" + testCode;
         }
+
+        // Append any student-generated inline test code
+        if (inlineTestCode) {
+            self.postMessage({ type: "system", text: "Appending student-generated tests..." });
+            executionCode = executionCode + "\n\n" + inlineTestCode;
+        }
+
 
         // Automatically fetch numeric packages like numpy, scipy, pandas if imported
         await pyodide.loadPackagesFromImports(executionCode);

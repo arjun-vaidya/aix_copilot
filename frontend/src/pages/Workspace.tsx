@@ -4,6 +4,8 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "reac
 import { loadProblemById, type ProblemSet } from "../lib/problemLoader";
 import GatekeeperPanel from "../components/workspace/GatekeeperPanel";
 import Editor from "../components/workspace/Editor";
+import { type TestFile } from "../components/workspace/TestingPanel";
+import { type QuizQuestion } from "../components/workspace/QuizPanel";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
@@ -66,6 +68,13 @@ export default function Workspace() {
 
   // Editor Code State
   const [editorCode, setEditorCode] = useState<string>("");
+
+  // Test file state (lifted from TestingPanel so it survives tab switches)
+  const [testFiles, setTestFiles] = useState<TestFile[]>([]);
+  const [activeTestFileId, setActiveTestFileId] = useState<string | null>(null);
+
+  // Quiz state (lifted so it survives tab switches)
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
 
   // Sync editor code when problem loads from YAML
   useEffect(() => {
@@ -164,13 +173,23 @@ export default function Workspace() {
   }
 
   const handleRunTests = () => {
-    if (!problem?.unitTestPath) return;
+    if (!problem?.unitTestPath && testFiles.length === 0) return;
     setWorkspaceState("EXECUTION");
     executionModeRef.current = "test";
     setExecutionModeState("test");
-    setLogs(l => [...l, { type: "system", text: `\n> Initiating Validation Suite [${problem.unitTestPath}]...` }]);
+
+    // Combine student-generated test code
+    const studentTestCode = testFiles.map(f => f.code).join("\n\n");
+    const testCount = testFiles.length + (problem?.unitTestPath ? 1 : 0);
+    setLogs(l => [...l, { type: "system", text: `\n> Running ${testCount} test suite(s)...` }]);
+
     const worker = getWorker();
-    worker.postMessage({ code: editorCode, id: Date.now(), testPath: problem.unitTestPath });
+    worker.postMessage({
+      code: editorCode,
+      id: Date.now(),
+      testPath: problem?.unitTestPath || undefined,
+      inlineTestCode: studentTestCode || undefined,
+    });
   }
 
   const handleAuditSubmit = async (category: string | null, rationale: string) => {
@@ -320,6 +339,12 @@ export default function Workspace() {
                   setCode={setEditorCode}
                   onGenerateCode={handleGenerateCode}
                   isGeneratingCode={isGeneratingCode}
+                  testFiles={testFiles}
+                  setTestFiles={setTestFiles}
+                  activeTestFileId={activeTestFileId}
+                  setActiveTestFileId={setActiveTestFileId}
+                  quizQuestions={quizQuestions}
+                  setQuizQuestions={setQuizQuestions}
                 />
               </Panel>
               <PanelResizeHandle className="h-1.5 bg-slate-100 border-y border-slate-200 hover:bg-blue-200 transition-colors cursor-row-resize flex justify-center items-center z-10">
@@ -393,6 +418,12 @@ export default function Workspace() {
                     setCode={setEditorCode}
                     onGenerateCode={handleGenerateCode}
                     isGeneratingCode={isGeneratingCode}
+                    testFiles={testFiles}
+                    setTestFiles={setTestFiles}
+                    activeTestFileId={activeTestFileId}
+                    setActiveTestFileId={setActiveTestFileId}
+                    quizQuestions={quizQuestions}
+                    setQuizQuestions={setQuizQuestions}
                   />
                 </div>
                 <div className="h-2/5 flex flex-col bg-[#0d1117] relative">
