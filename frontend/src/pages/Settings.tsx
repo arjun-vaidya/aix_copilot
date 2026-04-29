@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings2, BookOpen, Code2, PanelRightOpen, CheckSquare } from "lucide-react";
+import { BookOpen, Code2, PanelRightOpen, CheckSquare } from "lucide-react";
 
 type ToggleSettingProps = {
     title: string;
