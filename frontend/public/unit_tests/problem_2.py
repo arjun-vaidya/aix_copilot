@@ -1,18 +1,20 @@
 import numpy as np
 import sys
+from main import m, k, c
+from scipy.integrate import odeint
 
 def run_tests():
     print("\n" + "="*30)
     print("🧪 RUNNING UNIT TESTS...")
     print("="*30)
-    
+
     # 1. Check constants
-    if 'm' not in globals() or 'k' not in globals() or 'c' not in globals():
-        raise AssertionError("Parameters 'm', 'k', and 'c' must remain defined.")
-        
-    # 2. Check required module imports
-    if 'odeint' not in globals():
-        raise AssertionError("You must import 'odeint' from scipy.integrate to solve the system.")
+    if not all(isinstance(val, (int, float)) for val in [m, k, c]):
+        raise AssertionError("Parameters 'm', 'k', and 'c' must be defined as numbers.")
+
+    # 2. Check required function
+    if not callable(odeint):
+        raise AssertionError("'odeint' must be imported from scipy.integrate.")
 
     print("✅ Initial parameters and imports verified.")
     print("\n🎉 ALL TESTS PASSED! Your oscillator syntax is sound.")

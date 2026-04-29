@@ -3,10 +3,12 @@ import { Play, Code2, Lock, Sparkles, FlaskConical, Brain, Check, X, Loader2 } f
 import MonacoEditor, { DiffEditor } from "@monaco-editor/react";
 import type { ProblemSet } from "../../lib/problemLoader";
 import type { WorkspaceState } from "../../pages/Workspace";
-import TestingPanel, { type TestFile } from "./TestingPanel";
+import { type TestFile } from "./TestingSidebar";
 import QuizPanel, { type QuizQuestion } from "./QuizPanel";
 
-type EditorTab = "main" | "testing" | "quizzes";
+// "main" -> main.py, "quizzes" -> Quizzes panel.
+// Test files are tracked separately via `activeTestFileId` (lifted to Workspace).
+type EditorTab = "main" | "quizzes";
 type GenerationStatus = "streaming" | "complete" | "error";
 
 export default function Editor({
@@ -54,70 +56,117 @@ export default function Editor({
 }) {
     const [activeTab, setActiveTab] = useState<EditorTab>("main");
 
-    // Diff view is shown only after streaming completes — never during streaming.
+    const activeTestFile = testFiles.find((f) => f.id === activeTestFileId) || null;
+    const isMainActive = activeTestFileId == null && activeTab === "main";
+    const isQuizzesActive = activeTestFileId == null && activeTab === "quizzes";
+    const isTestActive = activeTestFile !== null;
+
+    // Diff view is shown only after generation completes — never during streaming.
     const isDiffOpen =
         generationStatus === "complete" &&
         typeof generatedCode === "string" &&
-        generatedCode.length > 0;
+        generatedCode.length > 0 &&
+        isMainActive;
 
-    const isLocked = state === "GATEKEEPER" || state === "LOCKED" || (state === "EVALUATION" && evaluationResult === "fail" && executionMode === "test");
+    const isLocked =
+        state === "GATEKEEPER" ||
+        state === "LOCKED" ||
+        (state === "EVALUATION" && evaluationResult === "fail" && executionMode === "test");
 
     const handleRun = () => {
         if (isLocked) return;
         onRun();
     };
 
+    const goToMain = () => {
+        setActiveTestFileId(null);
+        setActiveTab("main");
+    };
+    const goToQuizzes = () => {
+        setActiveTestFileId(null);
+        setActiveTab("quizzes");
+    };
+
+    const handleCloseTestTab = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setTestFiles((prev) => prev.filter((f) => f.id !== id));
+        if (activeTestFileId === id) setActiveTestFileId(null);
+    };
+
+    const handleTestCodeChange = (newCode: string | undefined) => {
+        if (!activeTestFileId || newCode === undefined) return;
+        setTestFiles((prev) =>
+            prev.map((f) => (f.id === activeTestFileId ? { ...f, code: newCode } : f))
+        );
+    };
+
     return (
         <div className="flex-1 flex flex-col h-full bg-white relative">
-            {/* Top-level Tabs: main.py | Testing | Quizzes */}
-            <div className="h-11 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-2 shrink-0">
-                <div className="flex items-center">
-                    {/* main.py tab */}
+            {/* Top tabs: main.py | <test files> | Quizzes */}
+            <div className="h-11 bg-slate-50 border-b border-slate-200 flex items-center justify-between px-2 shrink-0 gap-2">
+                <div className="flex items-center min-w-0 flex-1 overflow-x-auto">
+                    {/* main.py */}
                     <button
-                        onClick={() => setActiveTab("main")}
-                        className={`px-4 py-1.5 flex items-center gap-2 rounded-md border transition-all ${
-                            activeTab === "main"
+                        onClick={goToMain}
+                        className={`shrink-0 px-4 py-1.5 flex items-center gap-2 rounded-md border transition-all ${
+                            isMainActive
                                 ? "bg-white border-slate-200 shadow-[0_1px_0_white] translate-y-[1px] border-b-transparent z-10"
                                 : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60"
                         }`}
                     >
-                        <Code2 className={`w-4 h-4 ${activeTab === "main" ? "text-blue-500" : "text-slate-400"}`} />
-                        <span className={`text-xs font-mono font-bold ${activeTab === "main" ? "text-slate-700" : "text-slate-500"}`}>main.py</span>
+                        <Code2 className={`w-4 h-4 ${isMainActive ? "text-blue-500" : "text-slate-400"}`} />
+                        <span className={`text-xs font-mono font-bold ${isMainActive ? "text-slate-700" : "text-slate-500"}`}>main.py</span>
                     </button>
 
-                    {/* Testing tab */}
-                    <button
-                        onClick={() => setActiveTab("testing")}
-                        className={`px-4 py-1.5 flex items-center gap-2 rounded-md border transition-all ${
-                            activeTab === "testing"
-                                ? "bg-white border-slate-200 shadow-[0_1px_0_white] translate-y-[1px] border-b-transparent z-10"
-                                : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60"
-                        }`}
-                    >
-                        <FlaskConical className={`w-4 h-4 ${activeTab === "testing" ? "text-emerald-500" : "text-slate-400"}`} />
-                        <span className={`text-xs font-bold ${activeTab === "testing" ? "text-slate-700" : "text-slate-500"}`}>Testing</span>
-                    </button>
+                    {/* Test file tabs (one per file) */}
+                    {testFiles.map((file) => {
+                        const isActive = activeTestFileId === file.id;
+                        return (
+                            <button
+                                key={file.id}
+                                onClick={() => setActiveTestFileId(file.id)}
+                                className={`group shrink-0 px-3 py-1.5 flex items-center gap-1.5 rounded-md border transition-all ${
+                                    isActive
+                                        ? "bg-white border-slate-200 shadow-[0_1px_0_white] translate-y-[1px] border-b-transparent z-10"
+                                        : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60"
+                                }`}
+                            >
+                                <FlaskConical className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-emerald-500" : "text-slate-400"}`} />
+                                <span className={`text-xs font-mono font-bold ${isActive ? "text-slate-700" : "text-slate-500"}`}>
+                                    {file.name}
+                                </span>
+                                <span
+                                    onClick={(e) => handleCloseTestTab(file.id, e)}
+                                    role="button"
+                                    aria-label={`Close ${file.name}`}
+                                    className="ml-1 w-4 h-4 rounded flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                                >
+                                    <X className="w-3 h-3" />
+                                </span>
+                            </button>
+                        );
+                    })}
 
-                    {/* Quizzes tab */}
+                    {/* Quizzes — pinned to the end */}
                     <button
-                        onClick={() => setActiveTab("quizzes")}
-                        className={`px-4 py-1.5 flex items-center gap-2 rounded-md border transition-all ${
-                            activeTab === "quizzes"
+                        onClick={goToQuizzes}
+                        className={`shrink-0 px-4 py-1.5 flex items-center gap-2 rounded-md border transition-all ${
+                            isQuizzesActive
                                 ? "bg-white border-slate-200 shadow-[0_1px_0_white] translate-y-[1px] border-b-transparent z-10"
                                 : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/60"
                         }`}
                     >
-                        <Brain className={`w-4 h-4 ${activeTab === "quizzes" ? "text-violet-500" : "text-slate-400"}`} />
-                        <span className={`text-xs font-bold ${activeTab === "quizzes" ? "text-slate-700" : "text-slate-500"}`}>
+                        <Brain className={`w-4 h-4 ${isQuizzesActive ? "text-violet-500" : "text-slate-400"}`} />
+                        <span className={`text-xs font-bold ${isQuizzesActive ? "text-slate-700" : "text-slate-500"}`}>
                             Quizzes{quizQuestions.length > 0 ? ` (${quizQuestions.length})` : ""}
                         </span>
                     </button>
                 </div>
 
-                {/* Action buttons — only visible on main.py tab */}
-                {activeTab === "main" && (
-                    <div className="flex items-center gap-2">
-                        {onGenerateCode && (
+                {/* Action buttons. Generate Code only on main.py; Run buttons on main.py and test files. */}
+                {!isQuizzesActive && (
+                    <div className="flex items-center gap-2 shrink-0">
+                        {isMainActive && onGenerateCode && (
                             <button
                                 onClick={() => !isLocked && state !== "EXECUTION" && onGenerateCode()}
                                 disabled={isLocked || state === "EXECUTION" || isGeneratingCode}
@@ -137,7 +186,6 @@ export default function Editor({
                                 Run Tests{testFiles.length > 0 ? ` (${testFiles.length})` : ""}
                             </button>
                         )}
-
                         <button
                             onClick={handleRun}
                             disabled={isLocked || state === "EXECUTION"}
@@ -151,8 +199,7 @@ export default function Editor({
             </div>
 
             {/* Panel Content */}
-            {activeTab === "main" ? (
-                /* Monaco Editor for main.py */
+            {isMainActive ? (
                 <div className="flex-1 relative">
                     {isLocked && (
                         <div className="absolute inset-0 z-20 bg-slate-100/80 backdrop-blur-[1px] flex items-center justify-center">
@@ -180,7 +227,7 @@ export default function Editor({
                             modified={generatedCode || ""}
                             options={{
                                 readOnly: true,
-                                renderSideBySide: false,    // unified inline diff: red strike for removed, green for added
+                                renderSideBySide: false,
                                 originalEditable: false,
                                 renderOverviewRuler: false,
                                 minimap: { enabled: false },
@@ -213,7 +260,7 @@ export default function Editor({
                         />
                     )}
 
-                    {/* Subtle bottom-right indicator while generation is in flight (does not change the editor itself) */}
+                    {/* In-flight indicator while generation is running (editor stays unchanged) */}
                     {isGeneratingCode && !isDiffOpen && (
                         <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-full shadow-md text-[11px] font-bold text-slate-700">
                             <Loader2 className="w-3.5 h-3.5 text-purple-500 animate-spin" />
@@ -246,15 +293,27 @@ export default function Editor({
                         </div>
                     )}
                 </div>
-            ) : activeTab === "testing" ? (
-                /* Testing Panel */
-                <TestingPanel
-                    mainCode={code}
-                    testFiles={testFiles}
-                    setTestFiles={setTestFiles}
-                    activeFileId={activeTestFileId}
-                    setActiveFileId={setActiveTestFileId}
-                />
+            ) : isTestActive ? (
+                <div className="flex-1 relative">
+                    <MonacoEditor
+                        height="100%"
+                        language="python"
+                        theme="light"
+                        value={activeTestFile.code}
+                        onChange={handleTestCodeChange}
+                        options={{
+                            minimap: { enabled: false },
+                            fontSize: 13,
+                            lineHeight: 22,
+                            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                            scrollBeyondLastLine: false,
+                            smoothScrolling: true,
+                            cursorBlinking: "smooth",
+                            readOnly: isLocked,
+                            padding: { top: 16 },
+                        }}
+                    />
+                </div>
             ) : (
                 /* Quizzes Panel */
                 <QuizPanel

@@ -1,6 +1,7 @@
 import type { ProblemSet } from "./problemLoader";
 import type { LogEntry } from "../components/workspace/OutputConsole";
 import { LLMFactory } from "./llm/factory";
+import { collectOpenAIStream } from "./llm/streamUtils";
 
 export type ChatMessage = {
     role: "user" | "assistant" | "system";
@@ -186,39 +187,3 @@ ${workspaceContext.code}
     throw new Error("Reviewer returned an unexpected JSON shape.");
 }
 
-/**
- * Drains an OpenAI SSE chat-completions stream from /api/openai-chat
- * and returns the concatenated assistant text.
- */
-async function collectOpenAIStream(response: Response): Promise<string> {
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response stream.");
-
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let fullText = "";
-
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let sepIndex: number;
-        while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
-            const frame = buffer.slice(0, sepIndex);
-            buffer = buffer.slice(sepIndex + 2);
-            for (const rawLine of frame.split("\n")) {
-                const line = rawLine.trim();
-                if (!line.startsWith("data:")) continue;
-                const data = line.slice(5).trim();
-                if (!data || data === "[DONE]") continue;
-                try {
-                    const parsed = JSON.parse(data);
-                    const text = parsed?.choices?.[0]?.delta?.content;
-                    if (text) fullText += text;
-                } catch { /* skip malformed chunk */ }
-            }
-        }
-    }
-    return fullText;
-}

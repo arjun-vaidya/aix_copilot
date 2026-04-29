@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Sparkles, RefreshCw, CheckCircle2, XCircle, Brain } from "lucide-react";
+import { collectOpenAIStream } from "../../lib/llm/streamUtils";
 
 export type QuizQuestion = {
   id: string;
@@ -75,38 +76,6 @@ Generate 3 quiz questions:`;
   }));
 }
 
-async function collectOpenAIStream(response: Response): Promise<string> {
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response stream.");
-
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let fullText = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    let sepIndex: number;
-    while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
-      const frame = buffer.slice(0, sepIndex);
-      buffer = buffer.slice(sepIndex + 2);
-      for (const rawLine of frame.split("\n")) {
-        const line = rawLine.trim();
-        if (!line.startsWith("data:")) continue;
-        const data = line.slice(5).trim();
-        if (!data || data === "[DONE]") continue;
-        try {
-          const parsed = JSON.parse(data);
-          const text = parsed?.choices?.[0]?.delta?.content;
-          if (text) fullText += text;
-        } catch { /* skip */ }
-      }
-    }
-  }
-  return fullText;
-}
 
 export default function QuizPanel({
   problemTitle,

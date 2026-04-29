@@ -117,7 +117,7 @@ export default function GatekeeperPanel({
                             onUnlock();
                         }}
                         disabled={!isValid}
-                        className="w-full py-3 mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 cursor-pointer"
+                        className="w-full py-3 mt-4 flex items-center justify-center gap-2 bg-white hover:bg-white border-2 border-slate-300 hover:border-slate-500 text-slate-700 disabled:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-sm font-bold rounded-xl shadow-sm transition-all cursor-pointer"
                     >
                         <Lock className="w-4 h-4" />
                         Unlock Workspace

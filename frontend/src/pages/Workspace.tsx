@@ -4,14 +4,14 @@ import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "reac
 import { loadProblemById, type ProblemSet } from "../lib/problemLoader";
 import GatekeeperPanel from "../components/workspace/GatekeeperPanel";
 import Editor from "../components/workspace/Editor";
-import { type TestFile } from "../components/workspace/TestingPanel";
+import TestingSidebar, { type TestFile } from "../components/workspace/TestingSidebar";
 import { type QuizQuestion } from "../components/workspace/QuizPanel";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
 import { type ChatMessage, reviewAndGenerateCode } from "../lib/aiService";
 import { useAuth } from "../contexts/AuthContext";
-import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle } from "lucide-react";
+import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle, FlaskConical } from "lucide-react";
 
 export type WorkspaceState = "LOCKED" | "GATEKEEPER" | "UNLOCKED" | "EXECUTION" | "EVALUATION";
 export type AuditRecord = { category: string; rationale: string; };
@@ -75,7 +75,7 @@ export default function Workspace() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>("streaming");
 
-  // Test file state (lifted from TestingPanel so it survives tab switches)
+  // Test file state (shared between TestingSidebar and Editor tabs)
   const [testFiles, setTestFiles] = useState<TestFile[]>([]);
   const [activeTestFileId, setActiveTestFileId] = useState<string | null>(null);
 
@@ -184,8 +184,6 @@ export default function Workspace() {
     executionModeRef.current = "test";
     setExecutionModeState("test");
 
-    // Combine student-generated test code
-    const studentTestCode = testFiles.map(f => f.code).join("\n\n");
     const testCount = testFiles.length + (problem?.unitTestPath ? 1 : 0);
     setLogs(l => [...l, { type: "system", text: `\n> Running ${testCount} test suite(s)...` }]);
 
@@ -194,9 +192,13 @@ export default function Workspace() {
       code: editorCode,
       id: Date.now(),
       testPath: problem?.unitTestPath || undefined,
-      inlineTestCode: studentTestCode || undefined,
+      testFiles: testFiles.map(f => ({ name: f.name, code: f.code })),
     });
   }
+
+  const handleBackToGatekeeper = () => {
+    setWorkspaceState("GATEKEEPER");
+  };
 
   const handleAuditSubmit = async (category: string | null, rationale: string) => {
     if (category) {
@@ -335,19 +337,31 @@ export default function Workspace() {
         // --- DESKTOP VIEW: 3-Column Resizable Panels ---
         <PanelGroup orientation="horizontal" className="flex-1">
 
-          {/* LEFT PANEL: Gatekeeper */}
+          {/* LEFT PANEL: Gatekeeper while locked, Testing workbench once unlocked */}
           <Panel defaultSize={20} minSize={15} className="bg-white flex flex-col border-r border-slate-200 z-0">
-            <GatekeeperPanel
-              problem={problem}
-              state={workspaceState}
-              onUnlock={handleUnlock}
-              objective={objective}
-              setObjective={setObjective}
-              constraints={constraints}
-              setConstraints={setConstraints}
-              approach={approach}
-              setApproach={setApproach}
-            />
+            {(workspaceState === "GATEKEEPER" || workspaceState === "LOCKED") ? (
+              <GatekeeperPanel
+                problem={problem}
+                state={workspaceState}
+                onUnlock={handleUnlock}
+                objective={objective}
+                setObjective={setObjective}
+                constraints={constraints}
+                setConstraints={setConstraints}
+                approach={approach}
+                setApproach={setApproach}
+              />
+            ) : (
+              <TestingSidebar
+                mainCode={editorCode}
+                testFiles={testFiles}
+                setTestFiles={setTestFiles}
+                activeFileId={activeTestFileId}
+                setActiveFileId={setActiveTestFileId}
+                isLocked={workspaceState === "EVALUATION" && evaluationResult === "fail" && executionModeState === "test"}
+                onBack={handleBackToGatekeeper}
+              />
+            )}
           </Panel>
 
           <PanelResizeHandle className="w-1.5 bg-slate-100 hover:bg-blue-200 transition-colors cursor-col-resize flex flex-col justify-center items-center z-10 border-r border-slate-200">
@@ -428,17 +442,34 @@ export default function Workspace() {
         <div className="flex-1 flex flex-col h-full bg-white pb-[68px]">
           {/* Main content area */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            {activeTab === "gatekeeper" && <GatekeeperPanel
-              problem={problem}
-              state={workspaceState}
-              onUnlock={handleUnlock}
-              objective={objective}
-              setObjective={setObjective}
-              constraints={constraints}
-              setConstraints={setConstraints}
-              approach={approach}
-              setApproach={setApproach}
-            />}
+            {activeTab === "gatekeeper" && (
+              (workspaceState === "GATEKEEPER" || workspaceState === "LOCKED") ? (
+                <GatekeeperPanel
+                  problem={problem}
+                  state={workspaceState}
+                  onUnlock={handleUnlock}
+                  objective={objective}
+                  setObjective={setObjective}
+                  constraints={constraints}
+                  setConstraints={setConstraints}
+                  approach={approach}
+                  setApproach={setApproach}
+                />
+              ) : (
+                <TestingSidebar
+                  mainCode={editorCode}
+                  testFiles={testFiles}
+                  setTestFiles={setTestFiles}
+                  activeFileId={activeTestFileId}
+                  setActiveFileId={(id) => {
+                    setActiveTestFileId(id);
+                    if (id != null) setActiveTab("editor");
+                  }}
+                  isLocked={workspaceState === "EVALUATION" && evaluationResult === "fail" && executionModeState === "test"}
+                  onBack={handleBackToGatekeeper}
+                />
+              )
+            )}
             {activeTab === "editor" && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="h-3/5 border-b border-slate-200">
@@ -495,8 +526,17 @@ export default function Workspace() {
               onClick={() => setActiveTab("gatekeeper")}
               className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${activeTab === "gatekeeper" ? "text-blue-600" : "text-slate-500 hover:text-slate-900"}`}
             >
-              <ListTodo className="w-5 h-5" />
-              <span className="text-[10px] font-bold">Gatekeeper</span>
+              {(workspaceState === "GATEKEEPER" || workspaceState === "LOCKED") ? (
+                <>
+                  <ListTodo className="w-5 h-5" />
+                  <span className="text-[10px] font-bold">Gatekeeper</span>
+                </>
+              ) : (
+                <>
+                  <FlaskConical className="w-5 h-5" />
+                  <span className="text-[10px] font-bold">Tests</span>
+                </>
+              )}
             </button>
 
             <div className="relative w-full h-full flex flex-col items-center justify-center">

@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+from main import k_arrhenius, X_CSTR, central_difference, dXdT_vals
 
 def run_tests():
     print("\n" + "="*30)
@@ -7,20 +8,16 @@ def run_tests():
     print("="*30)
 
     # 1. Check that the core functions are defined
-    if 'k_arrhenius' not in globals() or not callable(globals()['k_arrhenius']):
+    if not callable(k_arrhenius):
         raise AssertionError("You must define a callable function 'k_arrhenius(T)'.")
 
-    if 'X_CSTR' not in globals() or not callable(globals()['X_CSTR']):
+    if not callable(X_CSTR):
         raise AssertionError("You must define a callable function 'X_CSTR(T)'.")
 
-    if 'central_difference' not in globals() or not callable(globals()['central_difference']):
+    if not callable(central_difference):
         raise AssertionError("You must define a callable function 'central_difference(f, T_values, h)'.")
 
     print("✅ Function definitions verified.")
-
-    k_arrhenius = globals()['k_arrhenius']
-    X_CSTR = globals()['X_CSTR']
-    central_difference = globals()['central_difference']
 
     # 2. Validate k(T) at a known temperature
     # k(400) = 1e6 * exp(-80000 / (8.314 * 400))
@@ -58,10 +55,6 @@ def run_tests():
     print("✅ central_difference() is numerically accurate.")
 
     # 5. Check that dX/dT is positive across the temperature range (physical consistency)
-    if 'dXdT_vals' not in globals():
-        raise AssertionError("You must compute 'dXdT_vals' — the array of dX/dT values over T_grid.")
-
-    dXdT_vals = globals()['dXdT_vals']
     if dXdT_vals is None or len(dXdT_vals) == 0:
         raise AssertionError("dXdT_vals must be a non-empty array.")
 
