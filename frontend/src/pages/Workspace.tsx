@@ -9,7 +9,7 @@ import { type QuizQuestion } from "../components/workspace/QuizPanel";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
-import { type ChatMessage, generateCodeFromApproach } from "../lib/aiService";
+import { type ChatMessage, reviewAndGenerateCode } from "../lib/aiService";
 import { useAuth } from "../contexts/AuthContext";
 import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle } from "lucide-react";
 
@@ -68,6 +68,12 @@ export default function Workspace() {
 
   // Editor Code State
   const [editorCode, setEditorCode] = useState<string>("");
+
+  // AI code-generation preview state
+  // generatedCode === null means the preview is hidden.
+  type GenerationStatus = "streaming" | "complete" | "error";
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus>("streaming");
 
   // Test file state (lifted from TestingPanel so it survives tab switches)
   const [testFiles, setTestFiles] = useState<TestFile[]>([]);
@@ -226,29 +232,53 @@ export default function Workspace() {
   const handleGenerateCode = async () => {
     if (!problem || isGeneratingCode) return;
     setIsGeneratingCode(true);
-    setLogs(l => [...l, { type: "system", text: "\n> Generating code from your approach..." }]);
+    setGeneratedCode(null);  // make sure no stale diff is shown
+    setLogs(l => [...l, { type: "system", text: "\n> Reviewing your specification before generating..." }]);
 
     try {
-      await generateCodeFromApproach(
-        {
-          problem,
-          objective,
-          constraints,
-          approach,
-          code: editorCode,
-          logs,
-          audits,
-        },
-        (chunk: string) => {
-          setLogs(l => [...l, { type: "stdout", text: chunk }]);
-        }
-      );
-      setLogs(l => [...l, { type: "success", text: "\n[Code Generation Complete]" }]);
+      const result = await reviewAndGenerateCode({
+        problem,
+        objective,
+        constraints,
+        approach,
+        code: editorCode,
+        logs,
+        audits,
+      });
+
+      if (result.approved) {
+        setGeneratedCode(result.code);
+        setGenerationStatus("complete");
+        setLogs(l => [...l, { type: "success", text: "\n[Specification approved — review the proposed changes in the editor]" }]);
+      } else {
+        // Reject: surface the reviewer's feedback in the terminal and do NOT open the diff view.
+        setGeneratedCode(null);
+        setLogs(l => [
+          ...l,
+          { type: "error",  text: "\n[Specification rejected by reviewer]" },
+          { type: "stderr", text: result.reason },
+          { type: "system", text: "\n> Refine your Objective, Constraints, and Approach, then click Generate Code again." },
+        ]);
+      }
     } catch (err: any) {
+      setGeneratedCode(null);
       setLogs(l => [...l, { type: "error", text: `\n[Generation Error] ${err.message}` }]);
     } finally {
       setIsGeneratingCode(false);
     }
+  }
+
+  const handleAcceptGeneratedCode = () => {
+    if (generatedCode != null) {
+      setEditorCode(generatedCode);
+      setLogs(l => [...l, { type: "system", text: "\n> Generated code applied to main.py." }]);
+    }
+    setGeneratedCode(null);
+  }
+
+  const handleRejectGeneratedCode = () => {
+    setGeneratedCode(null);
+    setLogs(l => [...l, { type: "system", text: "\n> Generated code discarded." }]);
   }
 
   if (isLoading) {
@@ -339,6 +369,10 @@ export default function Workspace() {
                   setCode={setEditorCode}
                   onGenerateCode={handleGenerateCode}
                   isGeneratingCode={isGeneratingCode}
+                  generatedCode={generatedCode}
+                  generationStatus={generationStatus}
+                  onAcceptGeneratedCode={handleAcceptGeneratedCode}
+                  onRejectGeneratedCode={handleRejectGeneratedCode}
                   testFiles={testFiles}
                   setTestFiles={setTestFiles}
                   activeTestFileId={activeTestFileId}

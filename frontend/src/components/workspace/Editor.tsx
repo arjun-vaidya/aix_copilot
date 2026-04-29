@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Play, Code2, Lock, Sparkles, FlaskConical, Brain } from "lucide-react";
-import MonacoEditor from "@monaco-editor/react";
+import { Play, Code2, Lock, Sparkles, FlaskConical, Brain, Check, X, Loader2 } from "lucide-react";
+import MonacoEditor, { DiffEditor } from "@monaco-editor/react";
 import type { ProblemSet } from "../../lib/problemLoader";
 import type { WorkspaceState } from "../../pages/Workspace";
 import TestingPanel, { type TestFile } from "./TestingPanel";
 import QuizPanel, { type QuizQuestion } from "./QuizPanel";
 
 type EditorTab = "main" | "testing" | "quizzes";
+type GenerationStatus = "streaming" | "complete" | "error";
 
 export default function Editor({
     problem,
@@ -19,6 +20,10 @@ export default function Editor({
     setCode,
     onGenerateCode,
     isGeneratingCode,
+    generatedCode,
+    generationStatus,
+    onAcceptGeneratedCode,
+    onRejectGeneratedCode,
     testFiles,
     setTestFiles,
     activeTestFileId,
@@ -36,6 +41,10 @@ export default function Editor({
     setCode: (val: string) => void;
     onGenerateCode?: () => void;
     isGeneratingCode?: boolean;
+    generatedCode?: string | null;
+    generationStatus?: GenerationStatus;
+    onAcceptGeneratedCode?: () => void;
+    onRejectGeneratedCode?: () => void;
     testFiles: TestFile[];
     setTestFiles: React.Dispatch<React.SetStateAction<TestFile[]>>;
     activeTestFileId: string | null;
@@ -44,6 +53,12 @@ export default function Editor({
     setQuizQuestions: React.Dispatch<React.SetStateAction<QuizQuestion[]>>;
 }) {
     const [activeTab, setActiveTab] = useState<EditorTab>("main");
+
+    // Diff view is shown only after streaming completes — never during streaming.
+    const isDiffOpen =
+        generationStatus === "complete" &&
+        typeof generatedCode === "string" &&
+        generatedCode.length > 0;
 
     const isLocked = state === "GATEKEEPER" || state === "LOCKED" || (state === "EVALUATION" && evaluationResult === "fail" && executionMode === "test");
 
@@ -156,24 +171,80 @@ export default function Editor({
                             </div>
                         </div>
                     )}
-                    <MonacoEditor
-                        height="100%"
-                        language="python"
-                        theme="light"
-                        value={code}
-                        onChange={(val) => setCode(val || "")}
-                        options={{
-                            minimap: { enabled: false },
-                            fontSize: 13,
-                            lineHeight: 22,
-                            fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                            scrollBeyondLastLine: false,
-                            smoothScrolling: true,
-                            cursorBlinking: "smooth",
-                            readOnly: isLocked,
-                            padding: { top: 16 }
-                        }}
-                    />
+                    {isDiffOpen ? (
+                        <DiffEditor
+                            height="100%"
+                            language="python"
+                            theme="light"
+                            original={code}
+                            modified={generatedCode || ""}
+                            options={{
+                                readOnly: true,
+                                renderSideBySide: false,    // unified inline diff: red strike for removed, green for added
+                                originalEditable: false,
+                                renderOverviewRuler: false,
+                                minimap: { enabled: false },
+                                fontSize: 13,
+                                lineHeight: 22,
+                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                                scrollBeyondLastLine: false,
+                                smoothScrolling: true,
+                                padding: { top: 16 },
+                            }}
+                        />
+                    ) : (
+                        <MonacoEditor
+                            height="100%"
+                            language="python"
+                            theme="light"
+                            value={code}
+                            onChange={(val) => setCode(val || "")}
+                            options={{
+                                minimap: { enabled: false },
+                                fontSize: 13,
+                                lineHeight: 22,
+                                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                                scrollBeyondLastLine: false,
+                                smoothScrolling: true,
+                                cursorBlinking: "smooth",
+                                readOnly: isLocked,
+                                padding: { top: 16 }
+                            }}
+                        />
+                    )}
+
+                    {/* Subtle bottom-right indicator while generation is in flight (does not change the editor itself) */}
+                    {isGeneratingCode && !isDiffOpen && (
+                        <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-full shadow-md text-[11px] font-bold text-slate-700">
+                            <Loader2 className="w-3.5 h-3.5 text-purple-500 animate-spin" />
+                            Generating code…
+                        </div>
+                    )}
+
+                    {/* Floating Accept / Reject pill — only when the diff is ready */}
+                    {isDiffOpen && (
+                        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 px-1.5 py-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-full shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <span className="flex items-center gap-1.5 px-3 text-[11px] font-bold text-slate-600">
+                                <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                                Review AI changes
+                            </span>
+                            <div className="w-px h-5 bg-slate-200" />
+                            <button
+                                onClick={onAcceptGeneratedCode}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-bold transition-all shadow-sm"
+                            >
+                                <Check className="w-3.5 h-3.5" />
+                                Accept
+                            </button>
+                            <button
+                                onClick={onRejectGeneratedCode}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-red-50 border border-slate-200 hover:border-red-200 text-slate-700 hover:text-red-600 rounded-full text-xs font-bold transition-all"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                                Reject
+                            </button>
+                        </div>
+                    )}
                 </div>
             ) : activeTab === "testing" ? (
                 /* Testing Panel */
