@@ -4,28 +4,29 @@ Architecture for migrating AI4Numerics to Supabase (PostgreSQL + Auth) to handle
 
 ## 1. Backend Folder Structure
 
-### Proposed Backend Folder Structure (`backend/src/`)
+### Backend Folder Structure (`backend/src/`)
 ```text
 backend/
 ├── src/
 │   ├── main.py                # FastAPI application entry point
-│   ├── core/                  
-│   │   ├── config.py          # Environment variables (Supabase URL, API Keys)
+│   ├── core/
+│   │   ├── config.py          # Environment variables (Supabase URL, keys)
 │   │   └── security.py        # JWT validation middleware for Supabase Auth
 │   ├── db/
-│   │   ├── supabase.py        # Supabase client initialization
-│   │   └── models.py          # SQLAlchemy or Pydantic models matching the SQL schema
-│   ├── api/
-│   │   ├── routers/
-│   │   │   ├── auth.py        # Login/session routes
-│   │   │   ├── telemetry.py   # Endpoint to save iterations, audits, verifications
-│   │   │   ├── problems.py    # Endpoint to fetch problem sets
-│   │   │   └── instructor.py  # Endpoints for instructor dashboard analytics
-│   └── services/
-│       ├── reasoning_scorer.py  # LLM-based reasoning quality scorer
-│       └── telemetry_aggregator.py  # Aggregation queries for dashboards
+│   │   └── supabase.py        # Supabase client initialization (service-role)
+│   └── api/
+│       └── routers/
+│           ├── auth.py        # Session verification (/api/auth/me)
+│           ├── telemetry.py   # Save student iterations
+│           └── audits.py      # Save manual audits for failed runs
+├── supabase_schema.sql        # Postgres schema (tables, enums, triggers, RLS)
+├── seed.sql                   # Optional seed data
 └── requirements.txt
 ```
+
+> Future routers (instructor analytics, problem CRUD) and services
+> (reasoning scorer, telemetry aggregator) will be added when implemented —
+> placeholder files were intentionally removed to avoid dead code.
 
 ---
 
@@ -166,4 +167,4 @@ All credentials injected via `.env`. Tokens stored in `HttpOnly`, `Secure`, `Sam
 4. **Backend Bootstrapping:** Populate the `backend/src/` directory with the files outlined in Section 1. Install `supabase-py`, `fastapi`, `pyjwt`, and `uvicorn`.
 5. **Frontend Wiring:** Install `@supabase/supabase-js` in the `frontend` directory. Replace the current mock login with the Supabase Auth UI. Update `handleRunSimulation` to POST structured telemetry to the FastAPI server.
 6. **Instructor Dashboard Endpoints:** Build aggregation queries in `instructor.py` to power the Class Insights dashboard (success rates, error heatmaps, at-risk students).
-7. **Reasoning Scorer:** Implement `reasoning_scorer.py` to pass verification logs through the Gemini API for automated reasoning quality grading.
+7. **Reasoning Scorer:** Add a `services/reasoning_scorer.py` that pipes verification logs through the OpenAI API (`/api/openai-chat`) for automated reasoning-quality grading.

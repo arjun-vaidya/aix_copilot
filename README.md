@@ -67,24 +67,25 @@ The instructor portal provides deep telemetry on how students use the AI, ensuri
 
 ## Implementation Details & Technical Stack
 
-To execute the features described above and in the UI layout mockups, the repository leans on a modern, decoupled web architecture:
+The repository is a decoupled web app: a Vite + React frontend, a Vercel Edge function for AI streaming, and a FastAPI backend backed by Supabase.
 
 ### 1. Frontend Client
-- **Framework:** Next.js (React) to allow smooth client-side routing between workspaces, dashboards, and complex state management across the Evaluation Loop stages.
-- **UI & Styling:** Vanilla CSS or Tailwind CSS coupled with a component library (e.g., Radix or shadcn/ui) to replicate the premium, minimalist aesthetic of the platform.
-- **Editor Integration:** Monaco Editor (the engine behind VS Code) embedded to provide native Python syntax highlighting, inline tooltips, and line-level selection for the "Manual Audit" phase.
-- **Data Visualization:** Recharts (or Chart.js) for plotting instructor dashboards. Real-time plot rendering for physics outputs (like displacement waves and phase space) via Plotly.js or D3.js.
+- **Framework:** React 19 + Vite (TypeScript). React Router for client-side routing across `/login`, `/dashboard`, `/workspace`, and `/instructor`.
+- **UI & Styling:** Tailwind CSS v4 with `lucide-react` icons. No component library — components live under `frontend/src/components/{dashboard,workspace,instructor,layout}`.
+- **Editor:** Monaco Editor (`@monaco-editor/react`) for Python syntax highlighting and line selection used by the Manual Audit flow.
+- **Markdown / math:** `react-markdown` + `remark-math` + `rehype-katex` for the Co-Pilot chat rendering.
 
 ### 2. Code Execution Layer
-- **Client-Side Python (Pyodide):** Code execution should ideally utilize **Pyodide** (WebAssembly port of CPython). This isolates execution in the student's browser tab, providing native access to libraries like `numpy` and `matplotlib` without requiring enormous server resources or sandboxing infrastructure for unsafe arbitrary code execution from students.
+- **Client-Side Python (Pyodide):** All student code runs in a Pyodide Web Worker (`frontend/src/lib/pyodideWorker.ts`) — execution is fully isolated to the student's browser tab, with `numpy`/`pandas`/`matplotlib` available without server-side sandboxing.
 
 ### 3. Backend & Data Layer
-- **Platform API:** Python (FastAPI) to manage high-performance asynchronous state persistence, student telemetry, automated reasoning grading, and authentication. Python is actively chosen here to allow seamless integration with data science libraries and ML models that run closely with the AI Engine Middleware.
-- **Database:** A relational database like PostgreSQL using **SQLAlchemy** (or SQLModel) as the ORM. Core models needed: `Users`, `ProblemSets`, `Workspaces` (holding Gatekeeper objectives/constraints), and `AuditLogs` (each containing iterations, tags, reasoning logs, and AI chats).
+- **Platform API:** FastAPI (`backend/src/`) for telemetry persistence and JWT verification. Endpoints under `/api/telemetry`, `/api/audits`, `/api/auth`.
+- **Database & Auth:** Supabase (Postgres + Auth). Backend uses the Supabase Python client with the **service role key** to bypass RLS for server-side inserts; the frontend uses the **anon key** so RLS enforces per-student isolation. Schema lives in `backend/supabase_schema.sql`.
 
 ### 4. AI Engine Middleware
-- Rather than directly calling the OpenAI/Anthropic API from the front-end, the Co-Pilot connects to a custom API middleware wrapper.
-- **Purpose:** This wrapper injects background context (like Gatekeeper constraints), limits simulation generations if the student hits the "Lazy Flag", maps prompt inputs to extract "Golden Prompts", and uses secondary prompt loops to auto-score the student's "Reasoning Quality" using a semantic evaluation rubric.
+- The Co-Pilot calls a custom Vercel Edge function at `/api/openai-chat` (`frontend/api/openai-chat.ts`) which proxies streaming requests to OpenAI's Chat Completions API. The Edge function holds the `OPENAI_API_KEY` so it never touches the browser.
+- A unified `LLMProvider` interface (`frontend/src/lib/llm/`) lets the workspace copilot, code generator, quiz panel, and test generator share one client. Switch providers by editing `DEFAULT_PROVIDER` in `factory.ts`.
+- Reasoning quality scoring and "Golden Prompts" aggregation are described below under *Future Considerations* — not yet implemented.
 
 ---
 
