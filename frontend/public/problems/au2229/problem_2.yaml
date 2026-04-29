@@ -28,3 +28,4 @@ initial_code: |
   # TODO: Define the ODE system and simulate
 
 unit_test_path: "/unit_tests/problem_2.py"
+quiz_path: "/quizzes/problem_2.json"

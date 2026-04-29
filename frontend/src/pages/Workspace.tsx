@@ -9,6 +9,7 @@ import { type QuizQuestion } from "../components/workspace/QuizPanel";
 import OutputConsole, { type LogEntry } from "../components/workspace/OutputConsole";
 import CoPilotChat from "../components/workspace/CoPilotChat";
 import AuditPanel from "../components/workspace/AuditPanel";
+import SuccessPanel from "../components/workspace/SuccessPanel";
 import { type ChatMessage, reviewAndGenerateCode } from "../lib/aiService";
 import { useAuth } from "../contexts/AuthContext";
 import { ListTodo, Code2, Bot, Lock, PanelRightOpen, PanelRightClose, AlertTriangle, FlaskConical } from "lucide-react";
@@ -145,9 +146,15 @@ export default function Workspace() {
         if (data.type === 'stdout' || data.type === 'stderr' || data.type === 'system') {
           setLogs(l => [...l, { type: data.type, text: data.text }]);
         } else if (data.type === 'success') {
-          setLogs(l => [...l, { type: "success", text: `\n[Simulation Completed] Return Output: ${data.result}` }]);
-          setEvaluationResult("pass");
-          setWorkspaceState("EVALUATION");
+          const isTest = executionModeRef.current === "test";
+          setLogs(l => [...l, { type: "success", text: `\n[${isTest ? "Tests" : "Simulation"} Completed] Return Output: ${data.result}` }]);
+          if (isTest) {
+            setEvaluationResult("pass");
+            setWorkspaceState("EVALUATION");
+            if (isMobile) setActiveTab("copilot");
+          } else {
+            setWorkspaceState("UNLOCKED");
+          }
           postTelemetry("PASS", data.result, undefined);
         } else if (data.type === 'error') {
           setLogs(l => [...l, { type: "error", text: `\n[Exception] ${data.error}` }]);
@@ -198,6 +205,40 @@ export default function Workspace() {
 
   const handleBackToGatekeeper = () => {
     setWorkspaceState("GATEKEEPER");
+  };
+
+  const handleSuccessSubmit = async (explanation: string, quizAnswers: Record<string, number>) => {
+    if (!session?.access_token || !problem) return;
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    try {
+      iterationCountRef.current += 1;
+      await fetch(`${apiBase}/api/telemetry/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          problem_id: problem.id,
+          iteration_number: iterationCountRef.current,
+          code_snapshot: editorCode,
+          objective_text: objective,
+          constraint_text: constraints,
+          approach_text: approach,
+          execution_mode: executionModeRef.current || "test",
+          execution_status: "PASS",
+          success_explanation: explanation,
+          quiz_answers: quizAnswers,
+          stdout: "",
+          stderr: ""
+        })
+      });
+    } catch (e) {
+      console.error("Success telemetry sync failed", e);
+    }
+    setEvaluationResult(null);
+    setWorkspaceState("UNLOCKED");
+    if (isMobile) setActiveTab("editor");
   };
 
   const handleAuditSubmit = async (category: string | null, rationale: string) => {
@@ -411,12 +452,17 @@ export default function Workspace() {
                 <div className="w-0.5 h-8 bg-slate-300 rounded-full"></div>
               </PanelResizeHandle>
 
-              {/* RIGHT PANEL: Co-Pilot or Audit */}
+              {/* RIGHT PANEL: Co-Pilot, Audit, or Success */}
               <Panel defaultSize={25} minSize={20} className="bg-white flex flex-col z-0">
                 {workspaceState === "EVALUATION" && evaluationResult === "fail" && executionModeState === "test" ? (
                   <AuditPanel
                     rawErrorLog={logs.filter(l => l.type === 'error').pop()?.text || ""}
                     onSubmitAudit={handleAuditSubmit}
+                  />
+                ) : workspaceState === "EVALUATION" && evaluationResult === "pass" ? (
+                  <SuccessPanel
+                    quizPath={problem?.quizPath}
+                    onSubmitSuccess={handleSuccessSubmit}
                   />
                 ) : (
                   <CoPilotChat

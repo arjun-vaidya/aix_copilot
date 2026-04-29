@@ -1,0 +1,32 @@
+[
+  {
+    "id": "p3q1",
+    "question": "In the central-difference formula (f(T+h) − f(T−h)) / 2h, what is the order of the truncation error?",
+    "options": [
+      "O(h) — first order",
+      "O(h²) — second order",
+      "O(h³) — third order"
+    ],
+    "correctIndex": 1
+  },
+  {
+    "id": "p3q2",
+    "question": "In the Arrhenius equation k(T) = k₀ exp(−Eₐ/RT), what happens to the rate constant as temperature increases?",
+    "options": [
+      "It decreases exponentially",
+      "It stays constant because k₀ is fixed",
+      "It increases because the exponential term approaches 1"
+    ],
+    "correctIndex": 2
+  },
+  {
+    "id": "p3q3",
+    "question": "For the CSTR conversion X(T) = kτ / (1 + kτ), what is the maximum theoretical conversion as k → ∞?",
+    "options": [
+      "X → 0 (no conversion)",
+      "X → 0.5 (half converted)",
+      "X → 1 (complete conversion)"
+    ],
+    "correctIndex": 2
+  }
+]

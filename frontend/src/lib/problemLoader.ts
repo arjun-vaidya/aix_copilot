@@ -15,6 +15,7 @@ export type ProblemSet = {
     }[];
     initialCode: string;
     unitTestPath?: string;
+    quizPath?: string;
     lastModified: string;
 };
 
@@ -34,6 +35,7 @@ interface RawYamlProblem {
     }[];
     initial_code: string;
     unit_test_path?: string;
+    quiz_path?: string;
 }
 
 /**
@@ -70,6 +72,7 @@ export async function loadProblemById(problemId: string, instructorId = "au2229"
             dataset: parsed.datasets ?? [],
             initialCode: parsed.initial_code,
             unitTestPath: parsed.unit_test_path ?? undefined,
+            quizPath: parsed.quiz_path ?? undefined,
             lastModified,
         };
     } catch (error) {

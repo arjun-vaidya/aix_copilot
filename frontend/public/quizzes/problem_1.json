@@ -1,0 +1,32 @@
+[
+  {
+    "id": "p1q1",
+    "question": "In ordinary least squares, what does the normal equation (X^T X) β = X^T y solve for?",
+    "options": [
+      "The coefficient vector β that minimizes the sum of squared residuals",
+      "The eigenvalues of the covariance matrix",
+      "The determinant of the design matrix X"
+    ],
+    "correctIndex": 0
+  },
+  {
+    "id": "p1q2",
+    "question": "Why do we prepend a column of ones to the feature matrix X?",
+    "options": [
+      "To normalize the data to unit variance",
+      "To include a bias (intercept) term in the linear model",
+      "To make X^T X always invertible"
+    ],
+    "correctIndex": 1
+  },
+  {
+    "id": "p1q3",
+    "question": "What does a lower Mean Squared Error (MSE) indicate about the model?",
+    "options": [
+      "The model has more features than data points",
+      "The model's predictions are closer to the actual target values on average",
+      "The model is overfitting to noise in the training data"
+    ],
+    "correctIndex": 1
+  }
+]

@@ -35,3 +35,4 @@ initial_code: |
   print('Hello World!')
 
 unit_test_path: "/unit_tests/problem_1.py"
+quiz_path: "/quizzes/problem_1.json"

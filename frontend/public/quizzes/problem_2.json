@@ -1,0 +1,32 @@
+[
+  {
+    "id": "p2q1",
+    "question": "Why do we convert the second-order ODE mẍ + cẋ + kx = 0 into a system of two first-order ODEs before using odeint?",
+    "options": [
+      "scipy's odeint only accepts systems of first-order ODEs",
+      "Second-order ODEs have no analytical solution",
+      "It reduces the number of parameters from 3 to 2"
+    ],
+    "correctIndex": 0
+  },
+  {
+    "id": "p2q2",
+    "question": "For the parameters m=1, k=10, c=0.5, what type of damping does the oscillator exhibit?",
+    "options": [
+      "Overdamped (c² > 4mk)",
+      "Critically damped (c² = 4mk)",
+      "Underdamped (c² < 4mk)"
+    ],
+    "correctIndex": 2
+  },
+  {
+    "id": "p2q3",
+    "question": "What physical quantity does the variable v = dx/dt represent in the state vector y = [x, v]?",
+    "options": [
+      "The acceleration of the mass",
+      "The velocity of the mass",
+      "The potential energy stored in the spring"
+    ],
+    "correctIndex": 1
+  }
+]

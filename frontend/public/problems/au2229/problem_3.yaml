@@ -67,3 +67,4 @@ initial_code: |
   # TODO: Compute X_vals and dXdT_vals using your functions above
 
 unit_test_path: "/unit_tests/problem_3.py"
+quiz_path: "/quizzes/problem_3.json"
