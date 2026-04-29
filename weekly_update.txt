@@ -1,0 +1,13 @@
+WEEKLY UPDATE
+
+- Integrated OpenAI API for code generation, test file creation, and quiz generation
+- Redesigned code generation UX with silent generation and inline diff view with Accept/Reject pill
+- Refactored TA (Co-Pilot) prompt to avoid echoing student input and use domain-specific vocabulary
+- Reorganized testing UI: moved test workbench from separate tab to left sidebar post-unlock
+- Created dynamic test file tabs in editor alongside main.py
+- Implemented per-test visibility with individual PASS/FAIL announcements and tracebacks
+- Implemented strict LLM code reviewer gate that validates objective/constraints/approach completeness
+- Added back button to Testing Sidebar labeled "Edit Objective & Constraints" to return to Gatekeeper and revise planning
+- Built SuccessPanel component shown when all unit tests pass, mirroring AuditPanel's stepped layout
+- Added instructor-authored quiz JSON files for problems 1, 2, and 3 loaded via quiz_path in YAML
+- Implemented animated completion screen after submission with staggered fade-in (trophy, score, buttons)

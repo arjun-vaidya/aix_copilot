@@ -200,12 +200,16 @@ plt.show()
 ## 5. Validation
 
 **Parameter dependence:** *Does the result depend on method parameters (e.g., step size, resolution, number of iterations)?*
+(custom for each problem)
 
 Example:
 
 > The accuracy of the numerical differentiation depends on the step size h. Perform a convergence analysis of the results as h decreases. 
 
 **Unit tests**: *How can you ensure the results are correct and meaningful? Think about limiting cases, expected trends, or consistency with physical intuition.*
+
+(Box with an add button to add tests)
+(then run with those tests)
 
 Example 1:
 
@@ -217,6 +221,7 @@ Example 2:
 
 ## 6. Quiz
 
+(Optional - problem specific)
 **Q1. Method order** 
 
 The central-difference approximation
