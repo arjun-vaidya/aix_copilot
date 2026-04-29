@@ -236,9 +236,8 @@ export default function Workspace() {
     } catch (e) {
       console.error("Success telemetry sync failed", e);
     }
-    setEvaluationResult(null);
-    setWorkspaceState("UNLOCKED");
-    if (isMobile) setActiveTab("editor");
+    // Don't reset state here — let the SuccessPanel show the completion animation.
+    // Navigation back to dashboard is handled by the panel itself.
   };
 
   const handleAuditSubmit = async (category: string | null, rationale: string) => {

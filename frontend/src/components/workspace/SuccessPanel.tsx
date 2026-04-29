@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, Unlock, Lock } from "lucide-react";
+import { CheckCircle2, Unlock, Lock, ArrowLeft, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type InstructorQuizQuestion = {
     id: string;
@@ -14,10 +15,14 @@ interface SuccessPanelProps {
 }
 
 export default function SuccessPanel({ quizPath, onSubmitSuccess }: SuccessPanelProps) {
+    const navigate = useNavigate();
     const [explanation, setExplanation] = useState("");
     const [quizQuestions, setQuizQuestions] = useState<InstructorQuizQuestion[]>([]);
     const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
     const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
+    const [isCompleted, setIsCompleted] = useState(false);
+    const [quizScore, setQuizScore] = useState({ correct: 0, total: 0 });
+    const [animateIn, setAnimateIn] = useState(false);
 
     // Fetch instructor quiz questions from the problem's quizPath
     useEffect(() => {
@@ -41,6 +46,100 @@ export default function SuccessPanel({ quizPath, onSubmitSuccess }: SuccessPanel
         setQuizAnswers(prev => ({ ...prev, [questionId]: optionIndex }));
     };
 
+    const handleSubmit = () => {
+        // Calculate quiz score
+        const total = quizQuestions.length;
+        const correct = quizQuestions.filter(q => quizAnswers[q.id] === q.correctIndex).length;
+        setQuizScore({ correct, total });
+
+        // Fire the parent callback
+        onSubmitSuccess(explanation, quizAnswers);
+
+        // Show completion screen with animation
+        setIsCompleted(true);
+        setTimeout(() => setAnimateIn(true), 50);
+    };
+
+    // ── Completion Screen ──
+    if (isCompleted) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center bg-white px-8">
+                <div
+                    className={`flex flex-col items-center gap-5 transition-all duration-700 ease-out ${
+                        animateIn
+                            ? "opacity-100 translate-y-0 scale-100"
+                            : "opacity-0 translate-y-6 scale-95"
+                    }`}
+                >
+                    {/* Animated check icon */}
+                    <div className={`w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center transition-all duration-700 delay-200 ${
+                        animateIn ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                    }`}>
+                        <Trophy className="w-7 h-7 text-emerald-500" />
+                    </div>
+
+                    {/* Title */}
+                    <div className={`text-center transition-all duration-700 delay-300 ${
+                        animateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+                    }`}>
+                        <h2 className="text-lg font-bold text-emerald-700 tracking-tight">Problem Completed</h2>
+                        <p className="text-xs text-slate-500 font-medium mt-1">Great work on this problem.</p>
+                    </div>
+
+                    {/* Quiz Score */}
+                    {quizScore.total > 0 && (
+                        <div className={`bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-center transition-all duration-700 delay-500 ${
+                            animateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+                        }`}>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Quiz Score</p>
+                            <p className="text-2xl font-black text-slate-800">
+                                {quizScore.correct}
+                                <span className="text-sm font-bold text-slate-400 mx-0.5">/</span>
+                                {quizScore.total}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                                {quizScore.correct === quizScore.total
+                                    ? "Perfect score!"
+                                    : quizScore.correct >= quizScore.total / 2
+                                        ? "Good effort!"
+                                        : "Review the concepts and try again."}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Home button */}
+                    <button
+                        onClick={() => navigate("/dashboard")}
+                        className={`flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-slate-300 hover:border-slate-500 text-slate-700 text-xs font-bold rounded-xl transition-all duration-700 delay-700 cursor-pointer ${
+                            animateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+                        }`}
+                    >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        Back to Dashboard
+                    </button>
+
+                    {/* Try again */}
+                    {quizScore.total > 0 && (
+                        <button
+                            onClick={() => {
+                                setQuizAnswers({});
+                                setExplanation("");
+                                setAnimateIn(false);
+                                setIsCompleted(false);
+                            }}
+                            className={`flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-dashed border-slate-300 hover:border-slate-500 text-slate-500 hover:text-slate-700 text-xs font-bold rounded-xl transition-all duration-700 delay-[900ms] cursor-pointer ${
+                                animateIn ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+                            }`}
+                        >
+                            Try Quiz Again
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // ── Form Screen ──
     return (
         <div className="flex-1 flex flex-col bg-slate-50 overflow-y-auto">
             {/* Header */}
@@ -147,7 +246,7 @@ export default function SuccessPanel({ quizPath, onSubmitSuccess }: SuccessPanel
             <div className="px-5 py-4 bg-white border-t border-slate-200 mt-auto sticky bottom-0">
                 <button
                     disabled={!isSubmitValid}
-                    onClick={() => onSubmitSuccess(explanation, quizAnswers)}
+                    onClick={handleSubmit}
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white hover:bg-white border-2 border-slate-300 hover:border-slate-500 disabled:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
                 >
                     {isSubmitValid ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
