@@ -10,18 +10,19 @@ export type QuizQuestion = {
 };
 
 /**
- * Calls /api/gemini-chat to generate 3 quiz questions based on the problem and student code.
+ * Calls /api/openai-chat to generate 3 quiz questions based on the problem and student code.
+ * Uses OpenAI's JSON-mode for reliable structured output.
  */
 async function generateQuizQuestions(problemTitle: string, problemDescription: string, mainCode: string): Promise<QuizQuestion[]> {
   const systemPrompt = `You are a quiz generation assistant for a scientific computing education platform. Given a problem statement and the student's code, generate exactly 3 multiple-choice questions that test conceptual understanding of the implementation.
 
-Respond with a JSON array of exactly 3 objects, each with:
+Respond with a JSON object having a single key "questions" whose value is an array of exactly 3 objects, each with:
 - "question": the question text (reference specific code elements like variable names, functions, or constants when relevant)
 - "options": array of exactly 3 answer strings
 - "correctIndex": index (0-2) of the correct answer
 - "explanation": a detailed explanation of why the correct answer is right, referencing the student's code
 
-Respond with ONLY the JSON array. No other text.`;
+Respond with ONLY a single valid JSON object. No prose, no markdown.`;
 
   const userContent = `Problem: ${problemTitle}
 ${problemDescription}
@@ -31,12 +32,14 @@ ${mainCode || "# No code written yet"}
 
 Generate 3 quiz questions:`;
 
-  const response = await fetch("/api/gemini-chat", {
+  const response = await fetch("/api/openai-chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text: userContent }] }],
+      systemPrompt,
+      messages: [{ role: "user", content: userContent }],
+      response_format: { type: "json_object" },
+      temperature: 0.5,
     }),
   });
 
@@ -45,40 +48,64 @@ Generate 3 quiz questions:`;
     throw new Error((err as any)?.error || `API returned status ${response.status}`);
   }
 
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response stream");
-
-  const decoder = new TextDecoder();
-  let fullText = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split("\n");
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        try {
-          const parsed = JSON.parse(line.slice(6));
-          const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) fullText += text;
-        } catch { /* skip */ }
-      }
-    }
-  }
+  const fullText = await collectOpenAIStream(response);
 
   let jsonStr = fullText.trim();
   const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) jsonStr = fenceMatch[1].trim();
 
-  const parsed = JSON.parse(jsonStr);
-  return parsed.map((q: any, i: number) => ({
+  let parsed: any;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e: any) {
+    throw new Error(`AI returned malformed JSON: ${e?.message || "parse error"}`);
+  }
+
+  const arr: any[] = Array.isArray(parsed) ? parsed : parsed?.questions;
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error("AI response did not contain a 'questions' array.");
+  }
+
+  return arr.map((q: any, i: number) => ({
     id: `q-${Date.now()}-${i}`,
     question: q.question,
     options: q.options,
     correctIndex: q.correctIndex,
     explanation: q.explanation,
   }));
+}
+
+async function collectOpenAIStream(response: Response): Promise<string> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("No response stream.");
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullText = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let sepIndex: number;
+    while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
+      const frame = buffer.slice(0, sepIndex);
+      buffer = buffer.slice(sepIndex + 2);
+      for (const rawLine of frame.split("\n")) {
+        const line = rawLine.trim();
+        if (!line.startsWith("data:")) continue;
+        const data = line.slice(5).trim();
+        if (!data || data === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(data);
+          const text = parsed?.choices?.[0]?.delta?.content;
+          if (text) fullText += text;
+        } catch { /* skip */ }
+      }
+    }
+  }
+  return fullText;
 }
 
 export default function QuizPanel({

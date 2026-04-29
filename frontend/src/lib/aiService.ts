@@ -55,11 +55,10 @@ INSTRUCTIONS:
 You must NOT write blocks of executable code that directly solve their specific objective. However, you are fully encouraged to provide isolated code snippets, syntax examples, and scaffolding if the student is a beginner or encounters compilation errors. Remember, your ultimate goal is to ensure the student learns the core mathematical and physics concepts; mastering the programming syntax is just one stepping stone to getting there.
 Keep responses brief, encouraging, and highly academic.`;
 
-    // Instantiate modular provider through the unified factory
-    const provider = LLMFactory.getProvider("gemini");
+    // Instantiate modular provider through the unified factory (defaults to OpenAI).
+    const provider = LLMFactory.getProvider();
 
-    console.log("[GEMINI via FACTORY] Simulating API request with system prompt length:", systemPrompt.length);
-    console.log("Chat history size:", chatHistory.length);
+    console.log("[LLM via FACTORY] Streaming chat. System prompt length:", systemPrompt.length, "history size:", chatHistory.length);
 
     await provider.streamChat(systemPrompt, chatHistory, onChunkReceived);
 }
@@ -96,7 +95,7 @@ INSTRUCTIONS:
 - The code should be directly executable in a Pyodide environment.
 - Follow the student's stated approach as closely as possible.`;
 
-    const provider = LLMFactory.getProvider("gemini");
+    const provider = LLMFactory.getProvider();
 
     const chatHistory: ChatMessage[] = [
         { role: "user", content: "Generate the Python code based on my approach." }

@@ -21,8 +21,8 @@ def test_example():
 let fileCounter = 0;
 
 /**
- * Calls /api/gemini-chat and asks the model to return a JSON object
- * with { fileName, code }. The fileName is used for the test file tab.
+ * Calls /api/openai-chat and asks the model to return a JSON object
+ * with { fileName, code }. Uses OpenAI's JSON-mode for reliable structured output.
  */
 async function generateTestWithAI(userPrompt: string, mainCode: string): Promise<{ fileName: string; code: string }> {
   const systemPrompt = `You are a Python test generation assistant. Given the student's code and a test description, generate a complete pytest test file.
@@ -37,19 +37,21 @@ Rules for the code:
 - Use numpy and pytest where appropriate
 - Include docstrings for each test function
 
-Respond with ONLY the JSON object. No other text.`;
+Respond with ONLY a single valid JSON object. No prose, no markdown.`;
 
   const userContent = `Student code:
 ${mainCode || "# No code written yet"}
 
 Write a pytest file for: ${userPrompt}`;
 
-  const response = await fetch("/api/gemini-chat", {
+  const response = await fetch("/api/openai-chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text: userContent }] }],
+      systemPrompt,
+      messages: [{ role: "user", content: userContent }],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
     }),
   });
 
@@ -58,23 +60,50 @@ Write a pytest file for: ${userPrompt}`;
     throw new Error((err as any)?.error || `API returned status ${response.status}`);
   }
 
-  // Parse the SSE stream and collect all text chunks
+  const fullText = await collectOpenAIStream(response);
+
+  let jsonStr = fullText.trim();
+  const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) jsonStr = fenceMatch[1].trim();
+
+  let result: any;
+  try {
+    result = JSON.parse(jsonStr);
+  } catch (e: any) {
+    throw new Error(`AI returned malformed JSON: ${e?.message || "parse error"}`);
+  }
+
+  if (!result?.fileName || !result?.code) {
+    throw new Error("AI response missing required fields ('fileName', 'code').");
+  }
+  return { fileName: result.fileName, code: result.code };
+}
+
+async function collectOpenAIStream(response: Response): Promise<string> {
   const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response stream");
+  if (!reader) throw new Error("No response stream.");
 
   const decoder = new TextDecoder();
+  let buffer = "";
   let fullText = "";
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split("\n");
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
+    buffer += decoder.decode(value, { stream: true });
+
+    let sepIndex: number;
+    while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
+      const frame = buffer.slice(0, sepIndex);
+      buffer = buffer.slice(sepIndex + 2);
+      for (const rawLine of frame.split("\n")) {
+        const line = rawLine.trim();
+        if (!line.startsWith("data:")) continue;
+        const data = line.slice(5).trim();
+        if (!data || data === "[DONE]") continue;
         try {
-          const parsed = JSON.parse(line.slice(6));
-          const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+          const parsed = JSON.parse(data);
+          const text = parsed?.choices?.[0]?.delta?.content;
           if (text) fullText += text;
         } catch {
           // skip malformed chunks
@@ -82,16 +111,7 @@ Write a pytest file for: ${userPrompt}`;
       }
     }
   }
-
-  // Strip markdown fences if present
-  let jsonStr = fullText.trim();
-  const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenceMatch) {
-    jsonStr = fenceMatch[1].trim();
-  }
-
-  const result = JSON.parse(jsonStr);
-  return { fileName: result.fileName, code: result.code };
+  return fullText;
 }
 
 

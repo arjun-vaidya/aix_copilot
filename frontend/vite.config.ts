@@ -4,21 +4,20 @@ import tailwindcss from '@tailwindcss/vite'
 import type { Plugin } from 'vite'
 
 /**
- * Vite plugin that replicates the Vercel Edge Function for /api/gemini-chat
+ * Vite plugin that mirrors the Vercel Edge Function for /api/openai-chat
  * so that `npm run dev` works without needing `vercel dev`.
  */
-function geminiApiProxy(): Plugin {
+function openaiApiProxy(): Plugin {
   let apiKey = ''
 
   return {
-    name: 'gemini-api-proxy',
+    name: 'openai-api-proxy',
     configResolved(config) {
-      // Load env from the frontend directory
       const env = loadEnv(config.mode, config.root, '')
-      apiKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || ''
+      apiKey = env.OPENAI_API_KEY || ''
     },
     configureServer(server) {
-      server.middlewares.use('/api/gemini-chat', async (req, res) => {
+      server.middlewares.use('/api/openai-chat', async (req, res) => {
         if (req.method === 'OPTIONS') {
           res.writeHead(200, {
             'Access-Control-Allow-Origin': '*',
@@ -36,60 +35,77 @@ function geminiApiProxy(): Plugin {
         }
 
         if (!apiKey) {
-          res.writeHead(403, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'GEMINI_API_KEY is not set in .env.local' }))
+          res.writeHead(503, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'OPENAI_API_KEY is not set in frontend/.env.local' }))
           return
         }
 
-        // Read request body
         const chunks: Buffer[] = []
-        for await (const chunk of req) {
-          chunks.push(chunk)
-        }
+        for await (const chunk of req) chunks.push(chunk)
         const bodyStr = Buffer.concat(chunks).toString()
 
+        let body: any
         try {
-          const body = JSON.parse(bodyStr)
+          body = JSON.parse(bodyStr)
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Invalid JSON body' }))
+          return
+        }
 
-          const model = 'gemini-2.5-flash'
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${apiKey}&alt=sse`
+        const systemPrompt: string = body.systemPrompt || ''
+        const incomingMessages: any[] = Array.isArray(body.messages) ? body.messages : []
+        if (incomingMessages.length === 0) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: '`messages` must be a non-empty array' }))
+          return
+        }
 
-          const geminiBody = {
-            system_instruction: body.systemInstruction || body.system_instruction,
-            contents: body.contents,
-          }
+        const model: string =
+          typeof body.model === 'string' && body.model.trim() ? body.model : 'gpt-4o-mini'
+        const temperature: number =
+          typeof body.temperature === 'number' ? body.temperature : 0.7
 
-          const response = await fetch(url, {
+        const messages = systemPrompt
+          ? [{ role: 'system', content: systemPrompt }, ...incomingMessages]
+          : incomingMessages
+
+        const openaiBody: Record<string, unknown> = {
+          model,
+          messages,
+          stream: true,
+          temperature,
+        }
+        if (body.response_format && typeof body.response_format === 'object') {
+          openaiBody.response_format = body.response_format
+        }
+
+        try {
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(geminiBody),
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(openaiBody),
           })
 
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}))
+          if (!response.ok || !response.body) {
+            const errData: any = await response.json().catch(() => ({}))
             const errorMessage =
-              (errData as any)?.error?.message ||
-              (errData as any)?.[0]?.error?.message ||
-              `HTTP ${response.status} Error from Gemini API`
-
+              errData?.error?.message || `HTTP ${response.status} from OpenAI`
             res.writeHead(response.status, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({ error: errorMessage }))
             return
           }
 
-          // Stream the response back
           res.writeHead(200, {
             'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-cache, no-transform',
             Connection: 'keep-alive',
           })
 
-          const reader = response.body?.getReader()
-          if (!reader) {
-            res.end()
-            return
-          }
-
+          const reader = response.body.getReader()
           const pump = async () => {
             while (true) {
               const { done, value } = await reader.read()
@@ -100,19 +116,18 @@ function geminiApiProxy(): Plugin {
           }
           pump().catch(() => res.end())
         } catch (error: any) {
-          res.writeHead(500, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: error.message || 'Failed to communicate with LLM provider.' }))
+          res.writeHead(502, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: `Network error reaching OpenAI: ${error?.message || 'unknown'}` }))
         }
       })
     },
   }
 }
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    geminiApiProxy(),
+    openaiApiProxy(),
   ],
 })

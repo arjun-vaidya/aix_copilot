@@ -1,17 +1,18 @@
 import type { LLMProvider } from "./types";
-import { GeminiProvider } from "./geminiProvider";
+import { OpenAIProvider } from "./openaiProvider";
 
-export type LLMProviderType = "gemini" | "chatgpt";
+export type LLMProviderType = "openai";
+
+// Single switch point. To add another provider, implement LLMProvider and extend this switch.
+export const DEFAULT_PROVIDER: LLMProviderType = "openai";
 
 export class LLMFactory {
-    static getProvider(type: LLMProviderType): LLMProvider {
+    static getProvider(type: LLMProviderType = DEFAULT_PROVIDER): LLMProvider {
         switch (type) {
-            case "gemini":
-                return new GeminiProvider();
-            case "chatgpt":
-                throw new Error("ChatGPT Provider not implemented yet. modular infrastructure is ready.");
+            case "openai":
+                return new OpenAIProvider();
             default:
-                throw new Error("Unsupported LLM Provider");
+                throw new Error(`Unsupported LLM Provider: ${type}`);
         }
     }
 }
