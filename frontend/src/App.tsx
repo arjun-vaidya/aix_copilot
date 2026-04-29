@@ -8,6 +8,7 @@ import Sidebar from "./components/layout/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Instructor from "./pages/Instructor";
 import Workspace from "./pages/Workspace";
+import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
@@ -42,6 +43,7 @@ function AppContent() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/instructor" element={<Instructor />} />
             <Route path="/workspace/:id" element={<Workspace />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>
       </div>
