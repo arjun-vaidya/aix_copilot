@@ -1,6 +1,4 @@
 import ProblemTable from "../components/dashboard/ProblemTable";
-import ResourceCard from "../components/dashboard/ResourceCard";
-import { BrainCircuit, Cpu, ShieldCheck } from "lucide-react";
 
 export default function Dashboard() {
   return (
@@ -22,28 +20,6 @@ export default function Dashboard() {
             Available Problem Sets
           </h3>
           <ProblemTable />
-        </section>
-
-        {/* Resource Cards Section */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
-          <ResourceCard
-            title="Why Reasoning Matters"
-            description="Understanding the 'why' behind numerical methods ensures long-term retention beyond simple formula application."
-            linkText="Read Article"
-            Icon={BrainCircuit}
-          />
-          <ResourceCard
-            title="Debugging as a Learning Tool"
-            description="How analyzing convergence failures provides deeper insights into algorithm stability and precision limits."
-            linkText="Read Article"
-            Icon={Cpu}
-          />
-          <ResourceCard
-            title="Mastering the Gatekeeper Phase"
-            description="Strategies for overcoming the initial steep learning curve of advanced numerical analysis concepts."
-            linkText="Read Article"
-            Icon={ShieldCheck}
-          />
         </section>
       </main>
     </div>
